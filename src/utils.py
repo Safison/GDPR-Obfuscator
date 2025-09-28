@@ -1,10 +1,9 @@
 import boto3
 import csv
 import io
+from io import StringIO
 import pandas as pd
 
-
-#BUCKET_NAME = 'ans-gdpr-bucket'
 
 def parse_input_json(input_json):
     """Parses the input JSON to extract bucket name, file key, and PII fields"""
@@ -23,24 +22,38 @@ def read_csv_from_s3(bucket_name, file_key):
     file_key = file_key
     obj = s3.get_object(Bucket=bucket_name, Key=file_key) 
     csv_data = obj['Body'].read().decode('utf-8') 
-    csv_file = io.StringIO(csv_data) #converts the CSV data into a csv file-like object
-        
-    return csv_file
+    csv_io = StringIO(csv_data)
+    df_csv = pd.read_csv(csv_io) # reads the CSV data into a pandas DataFrame
+    #csv_file = io.StringIO(csv_data) #converts the CSV data into a csv file-like object
+    #print(csv_file)    
+    return df_csv
     
+def obfuscate_pii(df, pii_fields):
+    """Obfuscates PII fields in the dataframe"""
+    for field in pii_fields:
+        df[field] = df[field].apply(lambda x: '***' if pd.notnull(x) else x)
+    
+    #print(df.head())
+    return df
 
-def read_csv_columns(csv_file,pii_fields):
-    """Reads specific columns from a CSV file using pandas dateframe"""
-    df = pd.read_csv(csv_file, usecols=pii_fields) #reads only the specified columns from the CSV file into a pandas dataframe
-    print(df.head())
-    
-    
 
+def write_obfuscated_file_to_s3(bucket_name, file_key, df):
+    """Writes the obfuscated dataframe back to an S3 bucket as a CSV file"""
+    obfuscated_file_key = file_key.replace('.csv', '_obfuscated.csv')
+    file_key = obfuscated_file_key
+    s3 = boto3.client('s3')
+    csv_buffer = StringIO()
+    df.to_csv(csv_buffer, index=False)
+    s3.put_object(Bucket=bucket_name, Key=file_key, Body=csv_buffer.getvalue())
+    print(f"Obfuscated file written to s3://{bucket_name}/{file_key}")
 
 ##################
-if __name__ == "__main__":
-    bucket_name, file_key,pii_fields = parse_input_json({
-        "file_to_obfuscate": "s3://ans-gdpr-bucket/students.csv",
-        "pii_fields": ["name", "email_address"]
-    })
-    csv_file = read_csv_from_s3(bucket_name, file_key)
-    read_csv_columns(csv_file, pii_fields)
+
+# if __name__ == "__main__":
+#     bucket_name, file_key,pii_fields = parse_input_json({
+#         "file_to_obfuscate": "s3://ans-gdpr-bucket/students.csv",
+#         "pii_fields": ["student_id", "email_address"]
+#     })
+#     df_csv = read_csv_from_s3(bucket_name, file_key)
+#     obfuscate_pii(df_csv, pii_fields)
+#    write_obfuscated_file_to_s3(bucket_name, file_key, df_csv)
