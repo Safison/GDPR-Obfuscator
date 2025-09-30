@@ -1,6 +1,17 @@
 import pytest
 import pandas as pd
 from src.utils import parse_input_json, read_csv_from_s3, obfuscate_pii, write_obfuscated_file_to_s3
+import moto
+import boto3
+from moto import mock_aws
+import io
+from io import StringIO
+
+@pytest.fixture
+def s3_boto_client():
+    with mock_aws():
+        s3 = boto3.client('s3', region_name='us-east-1')
+        yield s3
 
 def test_parse_input_json():
     input_json = {
@@ -49,4 +60,22 @@ def test_parse_input_json_invalid_path():
     assert bucket_name == ""
     assert file_key == ""
     assert pii_fields == []
+
+@mock_aws
+def test_read_csv_from_s3(s3_boto_client):
+    # Create a mock S3 bucket and upload a test CSV file
+    bucket_name = "test-bucket"
+    file_key = "test.csv"
+    csv_content = "name,email_address\nAnas,anas@example.com\nBob,bob@example.com"
+    s3_boto_client.create_bucket(Bucket=bucket_name)
+    s3_boto_client.put_object(Bucket=bucket_name, Key=file_key, Body=csv_content)
+    df = read_csv_from_s3(bucket_name, file_key)
+    assert not df.empty
+    assert list(df.columns) == ["name", "email_address"]
+
+def test_read_csv_from_s3_no_file():
+    bucket_name = "nonexistent-bucket"
+    file_key = "nonexistent-file.csv"
+    with pytest.raises(Exception):
+        read_csv_from_s3(bucket_name, file_key)
 
