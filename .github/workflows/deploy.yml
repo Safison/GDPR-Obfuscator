@@ -1,5 +1,4 @@
 name: gdpr-obfuscation-deploy
-
 on:
   push:
     branches:
