@@ -34,16 +34,23 @@ jobs:
         #Install terraform
       - name: setup terraform
         uses: hashicorp/setup-terraform@v3
+      
       - name: Setup AWS cred
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: ${{ secrets.sec_reg }}
           aws-access-key-id: ${{ secrets.sec_key }} 
           aws-secret-access-key: ${{ secrets.sec_access }}
+      
+      - name: Build Lambda zip
+        run:
+          mkdir -p packages
+          zip -r packages/lambda_package.zip src/*
       # terraform init
       - name: Terraform init 
         working-directory: terraform
         run: terraform init
+      
       
       # terraform plan
       - name: Terraform plan 

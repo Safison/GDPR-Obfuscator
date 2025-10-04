@@ -93,6 +93,7 @@ check-coverage:
 	PYTHONPATH=$(PWD) python -m coverage run --omit 'venv/*' -m pytest
 	PYTHONPATH=$(PWD) python -m coverage report -m
 ## Run all checks
+
 run-checks: security-test run-black unit-test check-coverage
 
 all: requirements dev-setup run-checks
