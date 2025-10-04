@@ -48,8 +48,8 @@ requirements: create-environment logdirs
 # Set Up
 ## Install bandit
 bandit:
-	$(call execute_in_env, $(PIP) install bandit)
-
+	venv/bin/bandit -r src || venv\Scripts\bandit -r src
+	
 ## Install black
 black:
 	$(call execute_in_env, $(PIP) install black)
