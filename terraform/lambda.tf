@@ -44,5 +44,5 @@ resource "aws_s3_object" "lambda_code" {
   key      = "${each.key}/function.zip"
   source   = "${path.module}/../packages/lambda_package.zip"
   #etag     = filemd5("${path.module}/../packages/lambda_package.zip")
-  etag     = filemd5("${path.module}/../packages/${each.key}/lambda_package.zip")
+  etag     = filemd5("${path.module}/../packages/lambda_package.zip")
 }
