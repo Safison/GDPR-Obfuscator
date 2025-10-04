@@ -86,8 +86,12 @@ unit-test:
 	PYTHONPATH=$(PWD) python -m pytest -vvv
 ## Run the coverage check
 check-coverage:
-	$(call execute_in_env, PYTHONPATH=${PYTHONPATH} coverage run --omit 'venv/*' -m pytest && coverage report -m)
-
+#$(call execute_in_env, PYTHONPATH=${PYTHONPATH} coverage run --omit 'venv/*' -m pytest && coverage report -m)
+	python -m venv venv
+	python -m pip install --upgrade pip
+	python -m pip install pytest coverage
+	PYTHONPATH=$(PWD) python -m coverage run --omit 'venv/*' -m pytest
+	PYTHONPATH=$(PWD) python -m coverage report -m
 ## Run all checks
 run-checks: security-test run-black unit-test check-coverage
 
