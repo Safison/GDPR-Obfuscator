@@ -49,7 +49,10 @@ requirements: create-environment logdirs
 ## Install bandit
 bandit:
 #venv/bin/bandit -r src || venv\Scripts\bandit -r src
-	$(call execute_in_env, $(PIP) install bandit)
+#$(call execute_in_env, $(PIP) install bandit)
+	python -m venv venv
+	source venv/bin/activate && pip install bandit && bandit -r src
+
 
 ## Install black
 black:
