@@ -27,7 +27,6 @@ create-environment:
 	)
 
 # Define utility variable to help calling Python from the virtual environment
-#ACTIVATE_ENV := .\venv\Scripts\activate
 ACTIVATE_ENV := source venv/bin/activate
 
 # Execute python related functionalities from within the project's environment
@@ -49,44 +48,36 @@ requirements: create-environment logdirs
 # Set Up
 ## Install bandit
 bandit:
-#venv/bin/bandit -r src || venv\Scripts\bandit -r src
-#$(call execute_in_env, $(PIP) install bandit)
 	python -m venv venv
 	source venv/bin/activate && pip install bandit && bandit -r src
 
 
 ## Install black
 black:
-#$(call execute_in_env, $(PIP) install black)
 	python -m venv venv
 	source venv/bin/activate && pip install black 
 ## Install coverage
 coverage:
-#$(call execute_in_env, $(PIP) install coverage)
 	python -m venv venv
 	source venv/bin/activate && pip install coverage 
-## Set up dev requirements (bandit, black, coverage)
+# Set up dev requirements (bandit, black, coverage)
 dev-setup: bandit black coverage
 
 # Build / Run
 
 ## Run the security test (bandit)
 security-test:
-#$(call execute_in_env, bandit -lll */*.py *c/*.py)
 	python -m bandit -lll */*.py *c/*.py
 ## Run the black code check
 run-black:
-#$(call execute_in_env, black ./src/*/*.py ./test/*.py)
 ## Run the unit testsrun-black:
 	python -m black src test
 	
 ## Run the unit tests
 unit-test:
-#$(call execute_in_env, PYTHONPATH=${PYTHONPATH} pytest -vvv)
 	PYTHONPATH=$(PWD) python -m pytest -vvv
 ## Run the coverage check
 check-coverage:
-##$(call execute_in_env, PYTHONPATH=${PYTHONPATH} coverage run --omit 'venv/*' -m pytest && coverage report -m)
 	python -m venv venv
 	python -m pip install --upgrade pip
 	python -m pip install pytest coverage
