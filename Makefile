@@ -41,7 +41,7 @@ logdirs:
 ## Build the environment requirements
 requirements: create-environment logdirs
 	python -m venv venv
-	venv\Scripts\pip install -r requirements.txt
+	python -m pip install -r requirements.txt
 	
 
 ################################################################################################################
