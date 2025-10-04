@@ -28,7 +28,7 @@ create-environment:
 
 # Define utility variable to help calling Python from the virtual environment
 #ACTIVATE_ENV := .\venv\Scripts\activate
-ACTIVATE_ENV := source venv/bin/activate
+ACTIVATE_ENV := source venv\bin/activate
 
 # Execute python related functionalities from within the project's environment
 define execute_in_env
@@ -82,8 +82,8 @@ run-black:
 	
 ## Run the unit tests
 unit-test:
-	$(call execute_in_env, PYTHONPATH=$(PWD) python -m pytest test -vvv)
-	
+	$(call execute_in_env, PYTHONPATH=${PYTHONPATH} pytest -vvv)
+
 ## Run the coverage check
 check-coverage:
 	$(call execute_in_env, PYTHONPATH=${PYTHONPATH} coverage run --omit 'venv/*' -m pytest && coverage report -m)
