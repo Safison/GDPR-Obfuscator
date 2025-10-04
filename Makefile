@@ -40,7 +40,9 @@ logdirs:
 
 ## Build the environment requirements
 requirements: create-environment logdirs
-	$(call execute_in_env, $(PIP) --require-virtualenv install -r ./requirements.txt)
+	python -m venv venv
+	venv\Scripts\pip install -r requirements.txt
+	
 
 ################################################################################################################
 # Set Up
