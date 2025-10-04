@@ -82,8 +82,8 @@ run-black:
 	
 ## Run the unit tests
 unit-test:
-	$(call execute_in_env, PYTHONPATH=${PYTHONPATH} pytest -vvv)
-
+	$(call execute_in_env, PYTHONPATH=$(PWD) python -m pytest test -vvv)
+	
 ## Run the coverage check
 check-coverage:
 	$(call execute_in_env, PYTHONPATH=${PYTHONPATH} coverage run --omit 'venv/*' -m pytest && coverage report -m)
