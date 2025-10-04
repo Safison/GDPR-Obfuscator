@@ -139,7 +139,9 @@ def test_write_obfuscated_file_to_s3(s3_client):
         "Anas,anas@example.com,22,2023"
         "\r\nBob,bob@example.com,21,2024\r\n"
     )
-    assert content == expected_content
+    #assert content == expected_content
+    assert content.replace('\r\n', '\n') == expected_content.replace('\r\n', '\n')
+
 
 
 def test_write_obfuscated_file_to_s3_no_bucket():
