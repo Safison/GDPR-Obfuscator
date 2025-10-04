@@ -43,9 +43,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.sec_access }}
       
       - name: Build Lambda zip
-        run:
-          mkdir -p packages
-          zip -r packages/lambda_package.zip src/*
+        run:  mkdir -p packages && zip -r packages/lambda_package.zip src/*
       # terraform init
       - name: Terraform init 
         working-directory: terraform
