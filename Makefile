@@ -58,12 +58,12 @@ bandit:
 black:
 #$(call execute_in_env, $(PIP) install black)
 	python -m venv venv
-	source venv/bin/activate && pip install black && black -r src
+	source venv/bin/activate && pip install black 
 ## Install coverage
 coverage:
 #$(call execute_in_env, $(PIP) install coverage)
 	python -m venv venv
-	source venv/bin/activate && pip install coverage && coverage -r src
+	source venv/bin/activate && pip install coverage 
 ## Set up dev requirements (bandit, black, coverage)
 dev-setup: bandit black coverage
 
