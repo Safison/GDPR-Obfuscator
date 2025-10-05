@@ -3,6 +3,8 @@ from utils import (
     read_csv_from_s3,
     obfuscate_pii,
     write_obfuscated_file_to_s3,
+    write_parquet_obfuscated_file_to_s3,
+    read_parquet_from_s3,
 )
 
 
@@ -12,12 +14,28 @@ def lambda_handler(event, context):
     It reads the CSV file, obfuscates sensitive data,
     and saves the obfuscated file back to the S3 bucket."""
     bucket_name, file_key, pii_fields = parse_input_json(event)
-    df_csv = read_csv_from_s3(bucket_name, file_key)
-    obfuscate_pii(df_csv, pii_fields)
-    write_obfuscated_file_to_s3(bucket_name, file_key, df_csv)
-
-    return {
+    
+    if file_key.endswith(".csv"):
+        df_csv = read_csv_from_s3(bucket_name, file_key)
+        obfuscate_pii(df_csv, pii_fields)
+        write_obfuscated_file_to_s3(bucket_name, file_key, df_csv)
+        return {
         "statusCode": 200,
         "body": "Obfuscation completed successfully.",
-    }
+        }
+    elif file_key.endswith(".parquet"):
+        df_parquet = read_parquet_from_s3(bucket_name, file_key)
+        obfuscate_pii(df_parquet, pii_fields)
+        write_parquet_obfuscated_file_to_s3(bucket_name, file_key, df_parquet)
+        return {
+        "statusCode": 200,
+        "body": "Obfuscation completed successfully.",
+        }
 
+###################################
+# Local Testign
+# if __name__ == "__main__":
+#     lambda_handler({
+#          "file_to_obfuscate": "s3://ans-gdpr-bucket/students.parquet",
+#          "pii_fields": ["student_id", "email_address"]
+#      }, None)
