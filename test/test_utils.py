@@ -138,8 +138,8 @@ def test_write_obfuscated_file_to_s3(s3_client):
         "cohort": [2023, 2024],
     }
     df = pd.DataFrame(data)
-    write_obfuscated_file_to_s3(bucket, file_key, df)
-    response = s3_client.get_object(Bucket=bucket, Key="test_obfuscated.csv")
+    csv_file_key = write_obfuscated_file_to_s3(bucket, file_key, df)
+    response = s3_client.get_object(Bucket=bucket, Key=csv_file_key)
     content = response["Body"].read().decode("utf-8")
     expected_content = (
         "name,email_address,age,cohort\r\n"

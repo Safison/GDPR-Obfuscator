@@ -87,6 +87,7 @@ def write_obfuscated_file_to_s3(bucket_name, file_key, df):
         df.to_csv(csv_buffer, index=False)
         s3.put_object(Bucket=bucket_name, Key=file_key, Body=csv_buffer.getvalue())
         print(f"CSV Obfuscated file written to s3://{bucket_name}/{file_key}")
+        return file_key
     except Exception as e:
         print(f"Error writing obfuscated file to S3: {e}")
         raise e
