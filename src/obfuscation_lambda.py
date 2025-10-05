@@ -21,7 +21,7 @@ def lambda_handler(event, context):
         write_obfuscated_file_to_s3(bucket_name, file_key, df_csv)
         return {
         "statusCode": 200,
-        "body": "Obfuscation completed successfully.",
+        "body": "CSV Obfuscation completed successfully.",
         }
     elif file_key.endswith(".parquet"):
         df_parquet = read_parquet_from_s3(bucket_name, file_key)
@@ -29,7 +29,7 @@ def lambda_handler(event, context):
         write_parquet_obfuscated_file_to_s3(bucket_name, file_key, df_parquet)
         return {
         "statusCode": 200,
-        "body": "Obfuscation completed successfully.",
+        "body": "Parquet Obfuscation completed successfully.",
         }
 
 ###################################
