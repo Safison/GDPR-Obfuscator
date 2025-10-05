@@ -115,7 +115,14 @@ def test_obfuscate_pii_no_pii_fields():
     df = pd.DataFrame(data)
     pii_fields = []
     obfuscated_df = obfuscate_pii(df, pii_fields)
-    assert obfuscated_df.equals(df)
+    assert obfuscated_df == "no pii fields provided"
+
+
+def test_obfuscate_no_df():
+    df = "no df"
+    pii_fields = ["name", "email_address"]
+    obfuscated_df = obfuscate_pii(df, pii_fields)
+    assert obfuscated_df == "no data frame provided"
 
 
 @mock_aws
@@ -139,12 +146,10 @@ def test_write_obfuscated_file_to_s3(s3_client):
         "Anas,anas@example.com,22,2023"
         "\r\nBob,bob@example.com,21,2024\r\n"
     )
-    #assert content == expected_content
     assert content.replace('\r\n', '\n') == expected_content.replace('\r\n', '\n')
 
 
-
-def test_write_obfuscated_file_to_s3_no_bucket():
+def test_write_obfuscated_file_to_s3_invalid_bucket():
     bucket_name = "nonexistent-bucket"
     file_key = "test.csv"
     data = {
@@ -156,3 +161,49 @@ def test_write_obfuscated_file_to_s3_no_bucket():
     df = pd.DataFrame(data)
     with pytest.raises(Exception):
         write_obfuscated_file_to_s3(bucket_name, file_key, df)
+    
+
+def test_write_obfuscated_file_no_file_key():
+    bucket_name = "test-bucket"
+    file_key = ""
+    data = {
+        "name": ["Anas", "Bob"],
+        "email_address": ["anas@example.com", "bob@example.com"],
+        "age": [22, 21],
+        "cohort": [2023, 2024],
+    }   
+    df = pd.DataFrame(data)
+    assert write_obfuscated_file_to_s3(bucket_name, file_key, df) == ("No file key provided")
+
+
+def test_write_obfuscated_file_to_s3_no_df():
+    bucket_name = "test-bucket"
+    file_key = "test.csv"
+    df = "no df"
+    assert write_obfuscated_file_to_s3(bucket_name, file_key, df) == ("No valid dataframe provided")
+
+
+def test_write_obfuscated_file_to_s3_no_csv_extension():
+    bucket_name = "test-bucket"
+    file_key = "test.txt"
+    data = {
+        "name": ["Anas", "Bob"],
+        "email_address": ["anas.example.com", "bob.example.com"],
+        "age": [22, 21],
+        "cohort": [2023, 2024],
+    }
+    df = pd.DataFrame(data)
+    assert write_obfuscated_file_to_s3(bucket_name, file_key, df) == ("File key must end with .csv")
+
+
+def test_write_obfuscated_file_to_s3_no_bucket():
+    bucket_name = ""
+    file_key = "test.csv"
+    data = {
+        "name": ["Anas", "Bob"],
+        "email_address": ["anas@example.com", "bob@example.com"],
+        "age": [22, 21],
+        "cohort": [2023, 2024],
+    }
+    df = pd.DataFrame(data)
+    assert write_obfuscated_file_to_s3(bucket_name, file_key, df) == ("No bucket name provided")
