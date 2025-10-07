@@ -15,7 +15,7 @@ import io
 from io import StringIO
 import csv
 
-
+s3_client = boto3.client("s3", region_name="us-east-1")
 @pytest.fixture
 def s3_client():
     with mock_aws():
@@ -80,7 +80,7 @@ def test_read_csv_from_s3(s3_client):
     csv_content = "name,email_address\nAnas,anas@example.com\n" "Bob,bob@example.com"
     s3_client.create_bucket(Bucket=bucket_name)
     s3_client.put_object(Bucket=bucket_name, Key=file_key, Body=csv_content)
-    df = read_csv_from_s3(bucket_name, file_key)
+    df = read_csv_from_s3(bucket_name, file_key,s3_client)
     assert not df.empty
     assert list(df.columns) == ["name", "email_address"]
 
@@ -89,7 +89,7 @@ def test_read_csv_from_s3_no_file():
     bucket_name = "nonexistent-bucket"
     file_key = "nonexistent-file.csv"
     with pytest.raises(Exception):
-        read_csv_from_s3(bucket_name, file_key)
+        read_csv_from_s3(bucket_name, file_key,s3_client)
 
 
 def test_obfuscate_pii():
@@ -162,7 +162,7 @@ def test_write_csv_obfuscated_file_to_s3(s3_client):
     }
     df = pd.DataFrame(data)
     df_obfuscate = obfuscate_pii(df, ["name", "email_address"])
-    csv_file_key = write_csv_obfuscated_file_to_s3(bucket, file_key, df_obfuscate)
+    csv_file_key = write_csv_obfuscated_file_to_s3(bucket, file_key, df_obfuscate,s3_client)
     response = s3_client.get_object(Bucket=bucket, Key=csv_file_key)
     content = response["Body"].read().decode("utf-8")
     expected_content = (
@@ -184,7 +184,7 @@ def test_write_csv_obfuscated_file_to_s3_invalid_bucket():
     }
     df = pd.DataFrame(data)
     with pytest.raises(Exception):
-        write_csv_obfuscated_file_to_s3(bucket_name, file_key, df)
+        write_csv_obfuscated_file_to_s3(bucket_name, file_key, df,s3_client)
     
 
 def test_write_csv_obfuscated_file_no_file_key():
@@ -197,14 +197,14 @@ def test_write_csv_obfuscated_file_no_file_key():
         "cohort": [2023, 2024],
     }   
     df = pd.DataFrame(data)
-    assert write_csv_obfuscated_file_to_s3(bucket_name, file_key, df) == ("No file key provided")
+    assert write_csv_obfuscated_file_to_s3(bucket_name, file_key, df,s3_client) == ("No file key provided")
 
 
 def test_write_csv_obfuscated_file_to_s3_no_df():
     bucket_name = "test-bucket"
     file_key = "test.csv"
     df = "no df"
-    assert write_csv_obfuscated_file_to_s3(bucket_name, file_key, df) == ("No valid dataframe provided")
+    assert write_csv_obfuscated_file_to_s3(bucket_name, file_key, df,s3_client) == ("No valid dataframe provided")
 
 
 def test_write_csv_obfuscated_file_to_s3_no_csv_extension():
@@ -217,7 +217,7 @@ def test_write_csv_obfuscated_file_to_s3_no_csv_extension():
         "cohort": [2023, 2024],
     }
     df = pd.DataFrame(data)
-    assert write_csv_obfuscated_file_to_s3(bucket_name, file_key, df) == ("File key must end with .csv")
+    assert write_csv_obfuscated_file_to_s3(bucket_name, file_key, df,s3_client) == ("File key must end with .csv")
 
 
 def test_write_csv_obfuscated_file_to_s3_no_bucket():
@@ -230,7 +230,7 @@ def test_write_csv_obfuscated_file_to_s3_no_bucket():
         "cohort": [2023, 2024],
     }
     df = pd.DataFrame(data)
-    assert write_csv_obfuscated_file_to_s3(bucket_name, file_key, df) == ("No bucket name provided")
+    assert write_csv_obfuscated_file_to_s3(bucket_name, file_key, df,s3_client) == ("No bucket name provided")
 
 
 @mock_aws
@@ -246,7 +246,7 @@ def test_read_parquet_from_s3(s3_client):
 
     s3_client.create_bucket(Bucket=bucket_name)
     s3_client.put_object(Bucket=bucket_name, Key=file_key, Body=parq_buffer.getvalue())
-    df = read_parquet_from_s3(bucket_name, file_key)
+    df = read_parquet_from_s3(bucket_name, file_key,s3_client)
     assert not df.empty
     assert list(df.columns) == ["student_id","name","course","cohort","graduation_date","email_address"]
     
@@ -266,7 +266,7 @@ def test_write_parquet_obfuscated_file_to_s3(s3_client):
     
     df = pd.DataFrame(data)
     df_obfuscate = obfuscate_pii(df, ["name", "email_address"])
-    parquet_file_key = write_parquet_obfuscated_file_to_s3(bucket_name, file_key, df_obfuscate)
+    parquet_file_key = write_parquet_obfuscated_file_to_s3(bucket_name, file_key, df_obfuscate,s3_client)
     response = s3_client.get_object(Bucket=bucket_name, Key=parquet_file_key)
     df = pd.read_parquet(io.BytesIO(response['Body'].read()))
     assert not df.empty

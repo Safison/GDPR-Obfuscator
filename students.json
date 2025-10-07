@@ -1,0 +1,10 @@
+[
+    {
+        "student_id": "1234",
+        "name": "John_Smith",
+        "course": "Software",
+        "cohort": "2024-03-31",
+        "graduation_date": "2027-03-31",
+        "email_address": "j.smith@email.com"
+    }
+]
