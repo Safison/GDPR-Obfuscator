@@ -24,7 +24,7 @@ def lambda_handler(event, context):
         obfus_file_key = write_csv_obfuscated_file_to_s3(bucket_name, file_key, df_obfuscate,s3_client)
         return {
         "statusCode": 200,
-        "body": f"{file_key} Obfuscated version written to {bucket_name}{obfus_file_key} successfully.",
+        "body": f"{file_key} Obfuscated version written to {bucket_name}/{obfus_file_key} successfully.",
         }
         
     elif file_key.endswith(".parquet"):
@@ -33,7 +33,7 @@ def lambda_handler(event, context):
         obfus_file_key = write_parquet_obfuscated_file_to_s3(bucket_name, file_key, df_obfuscate,s3_client)
         return {
         "statusCode": 200,
-        "body": f"{file_key} Obfuscated version written to {bucket_name}{obfus_file_key} successfully.",
+        "body": f"{file_key} Obfuscated version written to {bucket_name}/{obfus_file_key} successfully.",
         }
     elif file_key.endswith(".json"):
         df_json = read_json_from_s3(bucket_name, file_key,s3_client)
@@ -42,7 +42,7 @@ def lambda_handler(event, context):
         #print(f"{file_key} Obfuscated version written to {bucket_name}{obfus_file_key} successfully.")
         return {
         "statusCode": 200,
-        "body": f"{file_key} Obfuscated version written to {bucket_name}{obfus_file_key} successfully.",
+        "body": f"{file_key} Obfuscated version written to {bucket_name}/{obfus_file_key} successfully.",
         }
 ###################################
 # Local Testing
