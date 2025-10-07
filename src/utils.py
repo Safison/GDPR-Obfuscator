@@ -42,6 +42,7 @@ def obfuscate_pii(df, pii_fields):
         print(f"Error obfuscating PII fields: {e}")
         return df
 
+
 ###############
 #csv file processing
 ###############
@@ -66,7 +67,7 @@ def read_csv_from_s3(bucket_name, file_key):
         raise e
     
 
-def write_obfuscated_file_to_s3(bucket_name, file_key, df):
+def write_csv_obfuscated_file_to_s3(bucket_name, file_key, df):
     """Writes the obfuscated dataframe back to an S3 bucket as a CSV file"""
     if bucket_name == "":
         return ("No bucket name provided")
@@ -111,7 +112,6 @@ def read_parquet_from_s3(bucket_name, file_key):
             obj = s3.get_object(Bucket=bucket_name, Key=file_key)
             parquet_data = obj['Body'].read()
             df_parquet = pd.read_parquet(io.BytesIO(parquet_data))
-            print(df_parquet.head())
             return df_parquet
         except Exception as e:
             print(f"Error reading Parquet from S3: {e}")
@@ -141,6 +141,7 @@ def write_parquet_obfuscated_file_to_s3(bucket_name, file_key, df):
         parq_file_key = f"parq_files/{time_stamp}_{file_key}"
         s3.put_object(Bucket=bucket_name, Key= parq_file_key, Body=parq_buffer.getvalue())
         print(f"Obfuscated file written to s3://{bucket_name}/{parq_file_key}")
+        return parq_file_key
     except Exception as e:
         print(f"Error writing obfuscated file to S3: {e}")
         raise e
