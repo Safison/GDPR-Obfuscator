@@ -210,7 +210,7 @@ def convert_csv_to_parquet():
         raise e
 
 #########################################
-# Local Testing
+# Local Testing Only
 # if __name__ == "__main__":
 #     s3 = boto3.client("s3")
 #     bucket_name, file_key,pii_fields = parse_input_json({

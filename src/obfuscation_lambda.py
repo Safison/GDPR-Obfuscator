@@ -45,9 +45,9 @@ def lambda_handler(event, context):
         "body": f"{file_key} Obfuscated version written to {bucket_name}/{obfus_file_key} successfully.",
         }
 ###################################
-# Local Testing
-if __name__ == "__main__":
-    lambda_handler({
-         "file_to_obfuscate": "s3://ans-gdpr-bucket/students.json",
-         "pii_fields": ["student_id", "email_address"]
-     }, None)
+# Local Testing Only
+# if __name__ == "__main__":
+#     lambda_handler({
+#          "file_to_obfuscate": "s3://ans-gdpr-bucket/students.json",
+#          "pii_fields": ["student_id", "email_address"]
+#      }, None)

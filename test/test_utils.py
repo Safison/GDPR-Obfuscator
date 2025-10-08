@@ -7,6 +7,8 @@ from src.utils import (
     write_csv_obfuscated_file_to_s3,
     read_parquet_from_s3,
     write_parquet_obfuscated_file_to_s3,
+    read_json_from_s3,
+    write_json_obfuscated_file_to_s3,
 )
 import moto
 import boto3
@@ -14,6 +16,7 @@ from moto import mock_aws
 import io
 from io import StringIO
 import csv
+import json
 
 s3_client = boto3.client("s3", region_name="us-east-1")
 @pytest.fixture
@@ -83,6 +86,8 @@ def test_read_csv_from_s3(s3_client):
     df = read_csv_from_s3(bucket_name, file_key,s3_client)
     assert not df.empty
     assert list(df.columns) == ["name", "email_address"]
+    assert df["name"].tolist() == ["Anas", "Bob"]
+    assert df["email_address"].tolist() == ["anas@example.com", "bob@example.com"]
 
 
 def test_read_csv_from_s3_no_file():
@@ -127,26 +132,6 @@ def test_obfuscate_no_df():
     obfuscated_df = obfuscate_pii(df, pii_fields)
     assert obfuscated_df == "no data frame provided"
 
-
-# def test_obfuscated_csv_file():
-#     data = {
-#         "name": ["Anas", "Bob"],
-#         "email_address": ["anas@example.com", "bob@example.com"],
-#         "age": [22, 21],
-#         "cohort": [2023, 2024],
-#     }
-#     df = pd.DataFrame(data)
-#     pii_fields = ["name", "email_address"]
-#     df_obfuscate = obfuscate_pii(df, pii_fields)
-#     print(df_obfuscate)
-#     csv_file = obfuscated_csv_file(df_obfuscate)
-#     #print(csv_content)
-#     expected_content = (
-#         "name,email_address,age,cohort\r\n"
-#         "***,***,22,2023"
-#         "\r\n***,***,21,2024\r\n"
-#     )
-#     #assert csv_content.replace('\r\n', '\n') == expected_content.replace('\r\n', '\n')
 
 @mock_aws
 def test_write_csv_obfuscated_file_to_s3(s3_client):
@@ -238,18 +223,13 @@ def test_read_parquet_from_s3(s3_client):
     # Create a mock S3 bucket and upload a test parquet file
     bucket_name = "test-bucket"
     file_key = "students.parquet"
-    df_parq = pd.read_parquet("students.parquet")
-
-    parq_buffer = io.BytesIO()
-    df_parq.to_parquet(parq_buffer, engine="pyarrow", index=False)
-    parq_buffer.seek(0)
-
     s3_client.create_bucket(Bucket=bucket_name)
-    s3_client.put_object(Bucket=bucket_name, Key=file_key, Body=parq_buffer.getvalue())
+    s3_client.upload_file(file_key, bucket_name, file_key)
     df = read_parquet_from_s3(bucket_name, file_key,s3_client)
     assert not df.empty
     assert list(df.columns) == ["student_id","name","course","cohort","graduation_date","email_address"]
-    
+    assert df["name"].tolist() == ["John_Smith"]
+    assert df["email_address"].tolist() == ["j.smith@email.com"]
 
 
 @mock_aws
@@ -271,8 +251,52 @@ def test_write_parquet_obfuscated_file_to_s3(s3_client):
     df = pd.read_parquet(io.BytesIO(response['Body'].read()))
     assert not df.empty
     assert list(df.columns) == ["name", "email_address", "age", "cohort"]
-    name_list = df["name"].tolist()
-    email_list = df["email_address"].tolist()
-    assert name_list == ["***", "***"]
-    assert email_list == ["***", "***"]
+    assert df["name"].tolist() == ["***", "***"]
+    assert df["email_address"].tolist() == ["***", "***"]
+   
     
+@mock_aws
+def test_read_json_from_s3(s3_client):
+    # Create a mock S3 bucket and upload a test parquet file
+    bucket_name = "test-bucket"
+    file_key = "test.json"
+    data = {
+        "student_id": [1, 2],
+        "name": ["Anas", "Bob"],
+        "course": ["Software", "DE"],
+        "cohort": [2023, 2024],
+        "graduation_date": ["2024-05-15", "2025-06-20"],
+        "email_address": ["anas@example.com", "bob@example.com"],
+            }
+    json_file = json.dumps(data)
+    s3_client.create_bucket(Bucket=bucket_name)
+    s3_client.put_object(Bucket=bucket_name, Key=file_key, Body=json_file)
+    df = read_json_from_s3(bucket_name, file_key,s3_client)
+    assert not df.empty
+    assert list(df.columns) == ["student_id","name","course","cohort","graduation_date","email_address"]
+    assert df["name"].tolist() == ["Anas", "Bob"]
+    assert df["email_address"].tolist() == ["anas@example.com", "bob@example.com"] 
+
+@mock_aws
+def test_write_json_obfuscated_file_to_s3(s3_client):
+    bucket_name = "test-bucket"
+    file_key = "test.json"
+    s3_client.create_bucket(Bucket=bucket_name)
+    data = {
+        "name": ["Anas", "Bob"],
+        "email_address": ["anas@example.com", "bob@example.com"],
+        "age": [22, 21],
+        "cohort": [2023, 2024],
+    }
+    df = pd.DataFrame(data)
+    df_obfuscate = obfuscate_pii(df, ["name", "email_address"])
+    json_file_key = write_json_obfuscated_file_to_s3(bucket_name, file_key, df_obfuscate,s3_client)
+    response = s3_client.get_object(Bucket=bucket_name, Key=json_file_key)  
+    content = response["Body"].read().decode("utf-8")
+    expected_content = (
+        '{"name":"***","email_address":"***","age":22,"cohort":2023}\n'
+        '{"name":"***","email_address":"***","age":21,"cohort":2024}\n'
+    )
+    assert content == expected_content
+     
+
