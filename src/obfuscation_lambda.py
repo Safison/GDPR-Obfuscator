@@ -129,7 +129,7 @@ def lambda_handler(event, context):
 #Local Testing Only
 # if __name__ == "__main__":
 #     response = lambda_handler({
-#          "file_to_obfuscate": "s3://ans-gdpr-bucket/students.csv",
+#          "file_to_obfuscate": "s3://ans-gdpr-bucket/students.xx",
 #          "pii_fields": ["name", "email_address"]
 #      }, None)
 #     print(response)

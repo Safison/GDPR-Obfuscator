@@ -33,7 +33,7 @@ def parse_input_json(input_json):
                     pii_fields = input_json["pii_fields"]
                 return bucket_name, file_key, pii_fields
     except Exception as e:
-        print(f"Error parsing input JSON: {e}")
+        #print(f"Error parsing input JSON: {e}")
         return "", "", []
 
 
@@ -58,8 +58,8 @@ def obfuscate_pii(df, pii_fields):
 def read_csv_from_s3(bucket_name, file_key,s3):
     """Reads a CSV file from an S3 bucket and returns
     its content as a pandas DataFrame"""
-    bucket_name = bucket_name
-    file_key = file_key
+    # bucket_name = bucket_name
+    # file_key = file_key
     try:
         obj = s3.get_object(Bucket=bucket_name, Key=file_key)
         csv_data = obj["Body"].read().decode("utf-8")
@@ -70,24 +70,35 @@ def read_csv_from_s3(bucket_name, file_key,s3):
         return (f"Error reading CSV from S3: {e}")
     
  
-def write_csv_obfuscated_file_to_s3(bucket_name, file_key, df,s3):
-    """Writes the obfuscated dataframe back to an S3 bucket as a CSV file and returns file key"""
+def check_s3_file_df_valid(bucket_name, file_key,df, s3):
+    """Checks if a bucket name, file key, and df are valid """
     if file_key is None or file_key == "":
         return "No file key provided"
-    if file_key and not file_key.endswith(".csv"):
-        return "File key must have a .csv extension"
     if not isinstance(df, pd.DataFrame):
         return "No valid dataframe provided"
     if bucket_name is None or bucket_name == "":
         return "No bucket name provided"
+    return "pass"
+
+
+def write_csv_obfuscated_file_to_s3(bucket_name, file_key, df,s3):
+    """Writes the obfuscated dataframe back to an S3 bucket as a CSV file and returns file key"""
     try:
-        timestamp = pd.Timestamp.now().strftime("%Y%m%d%H%M%S")
-        obfuscated_file_key = file_key.replace(".csv", "_obfuscated.csv")
-        file_key = f"csv_files/{timestamp}_{obfuscated_file_key}"
-        csv_buffer = StringIO()
-        df.to_csv(csv_buffer, index=False)
-        s3.put_object(Bucket=bucket_name, Key=file_key, Body=csv_buffer.getvalue())
-        return file_key
+        
+        check_params = check_s3_file_df_valid(bucket_name, file_key, df, s3)
+        if file_key and not file_key.endswith(".csv"):
+            return "File key must have a .csv extension"
+        if check_params == "pass": 
+    
+            timestamp = pd.Timestamp.now().strftime("%Y%m%d%H%M%S")
+            obfuscated_file_key = file_key.replace(".csv", "_obfuscated.csv")
+            file_key = f"csv_files/{timestamp}_{obfuscated_file_key}"
+            csv_buffer = StringIO()
+            df.to_csv(csv_buffer, index=False)
+            s3.put_object(Bucket=bucket_name, Key=file_key, Body=csv_buffer.getvalue())
+            return file_key
+        else:
+            return check_params
     except Exception as e:
         return (f"Error writing obfuscated file to S3:{e}")
 
@@ -99,9 +110,6 @@ def write_csv_obfuscated_file_to_s3(bucket_name, file_key, df,s3):
 def read_parquet_from_s3(bucket_name, file_key,s3):
         """Reads a Parquet file from an S3 bucket and returns
         its content as a pandas DataFrame"""
-        #s3 = boto3.client("s3")
-        bucket_name = bucket_name
-        file_key = file_key
         try:
             obj = s3.get_object(Bucket=bucket_name, Key=file_key)
             parquet_data = obj['Body'].read()
@@ -115,15 +123,19 @@ def write_parquet_obfuscated_file_to_s3(bucket_name, file_key, df,s3):
     """Writes the obfuscated dataframe back to an S3 bucket as a parquet file
     and returns file key"""
     try:
-        obfuscated_file_key = file_key.replace(".parquet", "_obfuscated.parquet")
-        file_key = obfuscated_file_key
-        parq_buffer = io.BytesIO()
-        df.to_parquet(parq_buffer, engine="pyarrow", index=False)
-        parq_buffer.seek(0)
-        time_stamp = pd.Timestamp.now().strftime("%Y%m%d%H%M%S")
-        parq_file_key = f"parq_files/{time_stamp}_{file_key}"
-        s3.put_object(Bucket=bucket_name, Key= parq_file_key, Body=parq_buffer.getvalue())
-        return parq_file_key
+        check_params = check_s3_file_df_valid(bucket_name, file_key, df, s3)
+        if file_key and not file_key.endswith(".parquet"):
+            return "File key must have a .parquet extension"
+        if check_params == "pass":
+            obfuscated_file_key = file_key.replace(".parquet", "_obfuscated.parquet")
+            file_key = obfuscated_file_key
+            parq_buffer = io.BytesIO()
+            df.to_parquet(parq_buffer, engine="pyarrow", index=False)
+            parq_buffer.seek(0)
+            time_stamp = pd.Timestamp.now().strftime("%Y%m%d%H%M%S")
+            parq_file_key = f"parq_files/{time_stamp}_{file_key}"
+            s3.put_object(Bucket=bucket_name, Key= parq_file_key, Body=parq_buffer.getvalue())
+            return parq_file_key
     except Exception as e:
         return (f"Error writing obfuscated parquet file to s3: {e}")
 
@@ -131,11 +143,10 @@ def write_parquet_obfuscated_file_to_s3(bucket_name, file_key, df,s3):
 ######################
 # json file processing
 ######################
+
 def read_json_from_s3(bucket_name, file_key,s3):
     """Reads a JSON file from an S3 bucket and returns
     its content as a pandas DataFrame"""
-    bucket_name = bucket_name
-    file_key = file_key
     try:
         obj = s3.get_object(Bucket=bucket_name, Key=file_key)
         json_data = obj["Body"].read().decode("utf-8")
@@ -144,17 +155,22 @@ def read_json_from_s3(bucket_name, file_key,s3):
     except Exception as e:
         return (f"Error reading json from S3: {e}")
     
+
 def write_json_obfuscated_file_to_s3(bucket_name, file_key, df,s3):
     """Writes the obfuscated dataframe back to an S3 bucket as a JSON file
     and returns file key"""
     try:
-        timestamp = pd.Timestamp.now().strftime("%Y%m%d%H%M%S")
-        obfuscated_file_key = file_key.replace(".json", "_obfuscated.json")
-        file_key = f"json_files/{timestamp}_{obfuscated_file_key}"
-        json_buffer = StringIO()
-        df.to_json(json_buffer, orient="records", lines=True)
-        s3.put_object(Bucket=bucket_name, Key=file_key, Body=json_buffer.getvalue())
-        return file_key
+        check_params = check_s3_file_df_valid(bucket_name, file_key, df, s3)
+        if file_key and not file_key.endswith(".json"):
+            return "File key must have a .parquet extension"
+        if check_params == "pass":
+            timestamp = pd.Timestamp.now().strftime("%Y%m%d%H%M%S")
+            obfuscated_file_key = file_key.replace(".json", "_obfuscated.json")
+            file_key = f"json_files/{timestamp}_{obfuscated_file_key}"
+            json_buffer = StringIO()
+            df.to_json(json_buffer, orient="records", lines=True)
+            s3.put_object(Bucket=bucket_name, Key=file_key, Body=json_buffer.getvalue())
+            return file_key
     except Exception as e:
         return (f"Error writing obfuscated file to S3: {e}")
 
@@ -181,17 +197,26 @@ def convert_csv_to_parquet():
 #       })
 #     if file_key.endswith(".csv"):
 #         df_csv = read_csv_from_s3(bucket_name, file_key,s3)
-#         obfuscated_df = obfuscate_pii(df_csv, pii_fields)
-#         obs_file_key = write_csv_obfuscated_file_to_s3(bucket_name, file_key, obfuscated_df,s3)
-#         print(f"Obfuscated file written to s3://{bucket_name}/{obs_file_key}")
+#         print(df_csv)
+#         if isinstance(df_csv, (pd.DataFrame)):
+#             obfuscated_df = obfuscate_pii(df_csv, pii_fields)
+#             obs_file_key = write_csv_obfuscated_file_to_s3(bucket_name, file_key, obfuscated_df,s3)
+#             print(f"Obfuscated file written to s3://{bucket_name}/{obs_file_key}")
+
 #     elif file_key.endswith(".parquet"):
 #         df_parquet = read_parquet_from_s3(bucket_name, file_key,s3)
-#         obfuscated_df = obfuscate_pii(df_parquet, pii_fields)
-#         write_parquet_obfuscated_file_to_s3(bucket_name, file_key, obfuscated_df,s3)
-
+#         print(df_parquet)
+#         if isinstance(df_parquet, (pd.DataFrame)):
+#             obfuscated_df = obfuscate_pii(df_parquet, pii_fields)
+#             obs_file_key = write_parquet_obfuscated_file_to_s3(bucket_name, file_key, obfuscated_df,s3)
+#             print(f"Obfuscated file written to s3://{bucket_name}/{obs_file_key}")
+    
 #     elif file_key.endswith(".json"):
 #         df_json = read_json_from_s3(bucket_name, file_key,s3)
-#         obfuscated_df = obfuscate_pii(df_json, pii_fields)
-#         write_json_obfuscated_file_to_s3(bucket_name, file_key, obfuscated_df,s3)
-##############################################
+#         print(df_json)
+#         if isinstance(df_json, (pd.DataFrame)):
+#             obfuscated_df = obfuscate_pii(df_json, pii_fields)
+#             obs_file_key = write_json_obfuscated_file_to_s3(bucket_name, file_key, obfuscated_df,s3)
+#             print(f"Obfuscated file written to s3://{bucket_name}/{obs_file_key}")
+#############################################
      
