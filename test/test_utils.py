@@ -51,7 +51,7 @@ def test_parse_input_json_different_path():
 def test_parse_input_json_empty():
     input_json = {}
     bucket_name, file_key, pii_fields = parse_input_json(input_json)
-    assert bucket_name == ""
+    assert bucket_name == "Input JSON is empty."
     assert file_key == ""
     assert pii_fields == []
 
@@ -61,7 +61,7 @@ def test_parse_input_json_no_pii_fields():
     bucket_name, file_key, pii_fields = parse_input_json(input_json)
     assert bucket_name == "ans-gdpr-bucket"
     assert file_key == "students.csv"
-    assert pii_fields == []
+    assert pii_fields == ['No pii fields provided']
 
 
 def test_parse_input_json_invalid_path():
@@ -70,7 +70,7 @@ def test_parse_input_json_invalid_path():
         "pii_fields": ["name", "email_address"],
     }
     bucket_name, file_key, pii_fields = parse_input_json(input_json)
-    assert bucket_name == ""
+    assert bucket_name == "Invalid S3 URI format"
     assert file_key == ""
     assert pii_fields == []
 
@@ -90,12 +90,12 @@ def test_read_csv_from_s3(s3_client):
     assert df["email_address"].tolist() == ["anas@example.com", "bob@example.com"]
 
 
-def test_read_csv_from_s3_no_file():
+def test_read_csv_from_s3_no_file(s3_client):
     bucket_name = "nonexistent-bucket"
     file_key = "nonexistent-file.csv"
-    with pytest.raises(Exception):
-        read_csv_from_s3(bucket_name, file_key,s3_client)
-
+    df_csv = read_csv_from_s3(bucket_name,file_key,s3_client)
+    assert df_csv.startswith("Error reading CSV from S3:")  
+    
 
 def test_obfuscate_pii():
     data = {
@@ -168,8 +168,10 @@ def test_write_csv_obfuscated_file_to_s3_invalid_bucket():
         "cohort": [2023, 2024],
     }
     df = pd.DataFrame(data)
-    with pytest.raises(Exception):
-        write_csv_obfuscated_file_to_s3(bucket_name, file_key, df,s3_client)
+    result = write_csv_obfuscated_file_to_s3(bucket_name, file_key, df,s3_client)
+    assert result.startswith("Error writing obfuscated file to S3:")
+    # with pytest.raises(Exception):
+    #     write_csv_obfuscated_file_to_s3(bucket_name, file_key, df,s3_client)
     
 
 def test_write_csv_obfuscated_file_no_file_key():
@@ -202,7 +204,7 @@ def test_write_csv_obfuscated_file_to_s3_no_csv_extension():
         "cohort": [2023, 2024],
     }
     df = pd.DataFrame(data)
-    assert write_csv_obfuscated_file_to_s3(bucket_name, file_key, df,s3_client) == ("File key must end with .csv")
+    assert write_csv_obfuscated_file_to_s3(bucket_name, file_key, df,s3_client) == ("File key must have a .csv extension")
 
 
 def test_write_csv_obfuscated_file_to_s3_no_bucket():
@@ -257,7 +259,7 @@ def test_write_parquet_obfuscated_file_to_s3(s3_client):
     
 @mock_aws
 def test_read_json_from_s3(s3_client):
-    # Create a mock S3 bucket and upload a test parquet file
+    # Creates a mock S3 bucket and upload a test parquet file
     bucket_name = "test-bucket"
     file_key = "test.json"
     data = {
@@ -276,6 +278,7 @@ def test_read_json_from_s3(s3_client):
     assert list(df.columns) == ["student_id","name","course","cohort","graduation_date","email_address"]
     assert df["name"].tolist() == ["Anas", "Bob"]
     assert df["email_address"].tolist() == ["anas@example.com", "bob@example.com"] 
+
 
 @mock_aws
 def test_write_json_obfuscated_file_to_s3(s3_client):

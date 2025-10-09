@@ -72,6 +72,14 @@ def read_csv_from_s3(bucket_name, file_key,s3):
  
 def write_csv_obfuscated_file_to_s3(bucket_name, file_key, df,s3):
     """Writes the obfuscated dataframe back to an S3 bucket as a CSV file and returns file key"""
+    if file_key is None or file_key == "":
+        return "No file key provided"
+    if file_key and not file_key.endswith(".csv"):
+        return "File key must have a .csv extension"
+    if not isinstance(df, pd.DataFrame):
+        return "No valid dataframe provided"
+    if bucket_name is None or bucket_name == "":
+        return "No bucket name provided"
     try:
         timestamp = pd.Timestamp.now().strftime("%Y%m%d%H%M%S")
         obfuscated_file_key = file_key.replace(".csv", "_obfuscated.csv")
@@ -81,7 +89,7 @@ def write_csv_obfuscated_file_to_s3(bucket_name, file_key, df,s3):
         s3.put_object(Bucket=bucket_name, Key=file_key, Body=csv_buffer.getvalue())
         return file_key
     except Exception as e:
-        return ("Error writing obfuscated file to S3")
+        return (f"Error writing obfuscated file to S3:{e}")
 
 #######################
 #parquet file processing
