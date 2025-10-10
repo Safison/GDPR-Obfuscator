@@ -19,6 +19,7 @@ import csv
 import json
 
 s3_client = boto3.client("s3", region_name="us-east-1")
+
 @pytest.fixture
 def s3_client():
     with mock_aws():
