@@ -75,6 +75,7 @@ run-black:
 	
 ## Run the unit tests
 unit-test:
+	pip install moto[boto3]==5.0.7
 	PYTHONPATH=$(PWD) python -m pytest -vvv
 ## Run the coverage check
 check-coverage:

@@ -13,7 +13,7 @@ from utils import (
 
 s3_client = boto3.client("s3")
 
-def lambda_handler(event, context):
+def lambda_handler(event, context, s3_client =None):
     """This function is triggered by an event bridge, step machine, etc. 
     the function obfuscates sensitive data in files stored in S3 bucket.
     file to obfuscate is passed as s3 uri, along with the fields to be obfuscated 
@@ -32,6 +32,7 @@ def lambda_handler(event, context):
     - No lookup tables or re-identification keys are retained.
     - Logs and debug output never capture original data."""
     try:
+        s3_client = s3_client or boto3.client("s3")
         bucket_name, file_key, pii_fields = parse_input_json(event)
         if bucket_name == "Input JSON is empty.":
             return {
