@@ -19,7 +19,7 @@ def s3_client():
 
 @mock_aws
 def test_lambda_handler_csv(s3_client):
-    s3_client = boto3.client("s3", region_name="us-east-1")
+    #s3_client = boto3.client("s3", region_name="us-east-1")
     bucket_name = "test-bucket"
     file_key = "test.csv"
     s3_client.create_bucket(Bucket=bucket_name)
