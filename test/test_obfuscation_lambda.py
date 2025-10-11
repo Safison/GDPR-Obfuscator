@@ -1,6 +1,3 @@
-
-
-#from src.obfuscation_lambda import lambda_handler
 import boto3
 import pandas as pd
 import json
@@ -20,7 +17,7 @@ def s3_client():
         s3 = boto3.client("s3", region_name="us-east-1")
         yield s3
 
-
+@mock_aws
 def test_lambda_handler_csv(s3_client):
     s3_client = boto3.client("s3", region_name="us-east-1")
     bucket_name = "test-bucket"
@@ -35,7 +32,7 @@ def test_lambda_handler_csv(s3_client):
         "pii_fields": ["name", "email_address"]
     }
     response = lambda_handler(input_event, None)
-    #print(response)
+    print(response)
     #print(response["body"])
     assert response["statusCode"] == 200
     obfus_file_key = response["body"].replace(f"s3://{bucket_name}/", "")
@@ -49,4 +46,4 @@ def test_lambda_handler_csv(s3_client):
     assert all(df_obfuscated["email_address"] == "***")
     assert all(df_obfuscated["age"] == [22, 21])
     assert all(df_obfuscated["cohort"] == [2023, 2024])
-
+    
