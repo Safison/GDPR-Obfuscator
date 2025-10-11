@@ -25,7 +25,7 @@ def parse_input_json(input_json):
                 if input_json.get("pii_fields") is None:
                     pii_fields = ["No pii fields provided"]
                     return bucket_name, file_key, pii_fields
-                elif not isinstance(input_json["pii_fields"], list) or len(input_json["pii_fields"]) == 0:
+                elif not isinstance(input_json["pii_fields"], list) or len(input_json["pii_fields"]) <= 1:
                     pii_fields = ["No pii fields provided"]
                     return bucket_name, file_key, pii_fields
 
