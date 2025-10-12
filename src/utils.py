@@ -1,8 +1,9 @@
 import boto3
 import csv
 import io
-from io import StringIO
+from io import StringIO, BytesIO
 import pandas as pd
+import json
 
 
 def parse_input_json(input_json):
@@ -113,6 +114,13 @@ def write_csv_obfuscated_file_to_s3(bucket_name, file_key, df, s3):
     except Exception as e:
         return (f"Error writing obfuscated file to S3:{e}")
 
+
+def csv_bytestream_for_boto3_put(df_obf_csv):
+    csv_str = df_obf_csv.to_csv(index=False)
+    csv_bytes = csv_str.encode("utf-8")
+    return csv_bytes
+
+
 #######################
 # parquet file processing
 #######################
@@ -157,9 +165,16 @@ def write_parquet_obfuscated_file_to_s3(bucket_name, file_key, df, s3):
         return (f"Error writing obfuscated parquet file to s3: {e}")
 
 
+def parquet_bytestream_for_boto3_put(df_obf_parq):
+    buffer = BytesIO()
+    df_obf_parq.to_parquet(buffer, index=False)
+    parq_bytes = buffer.getvalue()
+    return parq_bytes
+
 ######################
 # json file processing
 ######################
+
 
 def read_json_from_s3(bucket_name, file_key, s3):
     """Reads a JSON file from an S3 bucket and returns
@@ -193,6 +208,12 @@ def write_json_obfuscated_file_to_s3(bucket_name, file_key, df, s3):
             return file_key
     except Exception as e:
         return (f"Error writing obfuscated file to S3: {e}")
+
+
+def json_bytestream_for_boto3_put(df_obf_jsn):
+    json_str = df_obf_jsn.to_json(orient="records", lines=False)
+    json_bytes = json_str.encode("utf-8")
+    return json_bytes
 
 
 ######################

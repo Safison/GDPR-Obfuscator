@@ -19,6 +19,7 @@ def s3_client():
 
 
 class TestCSV:
+    # Test lambda handler with csv file
     def test_lambda_handler_csv(self, s3_client):
         bucket_name = "test-bucket"
         file_key = "test.csv"
@@ -34,15 +35,16 @@ class TestCSV:
             "pii_fields": ["name", "email_address"]
         }
         response = lambda_handler(input_event, None, s3_client=s3_client)
-        print(response)
+        #print(response)
         assert response["statusCode"] == 200
-
-        obfus_file_key = response["body"].replace(f"s3://{bucket_name}/", "")
-        obj = s3_client.get_object(Bucket=bucket_name, Key=obfus_file_key)
-        csv_data = obj["Body"].read().decode("utf-8")
-        csv_io = StringIO(csv_data)
-        df_obfuscated = pd.read_csv(csv_io)
-        print(df_obfuscated)
+        csv_bytestream = response["body"]
+        #print(f"bytestream: {csv_bytes}")
+        # obfus_file_key = response["body"].replace(f"s3://{bucket_name}/", "")
+        # obj = s3_client.get_object(Bucket=bucket_name, Key=obfus_file_key)
+        # csv_data = obj["Body"].read().decode("utf-8")
+        # csv_io = StringIO(csv_data)
+        df_obfuscated = pd.read_csv(BytesIO(csv_bytestream))
+        #print(df_obfuscated)
         assert all(df_obfuscated["name"] == "***")
         assert all(df_obfuscated["email_address"] == "***")
         assert all(df_obfuscated["age"] == [22, 21])
@@ -50,6 +52,7 @@ class TestCSV:
 
 
 class TestFaultScenarios:
+    # Test lambda handler when no file exists
     def test_lambda_handler_no_file(self, s3_client):
         bucket_name = "test-bucket"
         file_key = "nonexistent.csv"
@@ -64,6 +67,7 @@ class TestFaultScenarios:
         assert response["statusCode"] == 400
         assert "no such file" in response["body"].lower()
 
+    # Test lambda handler when no pii fields provided
     def test_lambda_handler_no_pii_fields(self, s3_client):
         bucket_name = "test-bucket"
         file_key = "test.csv"
@@ -82,6 +86,9 @@ class TestFaultScenarios:
         assert response["statusCode"] == 400
         assert "no pii fields" in response["body"].lower()
 
+    """ Test lambda handler when file type is not one
+            one of the supported types. supported types
+            include .csv, .json, .parquet only"""
     def test_lambda_invalid_file_extension(self, s3_client):
         bucket_name = "test-bucket"
         file_key = "test.txt"
@@ -98,6 +105,7 @@ class TestFaultScenarios:
         assert response["statusCode"] == 400
         assert "unsupported file type" in response["body"].lower()
 
+    # Test lambda handler with empty event
     def test_lambda_handler_empty_event(self, s3_client):
         input_event = {}
         response = lambda_handler(input_event, None, s3_client=s3_client)
@@ -105,6 +113,7 @@ class TestFaultScenarios:
         assert response["statusCode"] == 400
         assert "input json is empty" in response["body"].lower()
 
+    # Test lambda handler with invalid s3 uri
     def test_lambda_handler_no_s3_uri(self, s3_client):
         input_event = {
             "file_to_obfuscate": "not_a_valid_s3_uri",
@@ -116,7 +125,9 @@ class TestFaultScenarios:
         assert "invalid s3 uri" in response["body"].lower()
 
 
+# Class for testing lambda handler with parquet file
 class TestParquet:
+    # Test lambda handler with parquet file
     def test_lambda_handler_parquet(self, s3_client):
         bucket_name = "test-bucket"
         file_key = "test.parquet"
@@ -142,18 +153,24 @@ class TestParquet:
         }
         response = lambda_handler(input_event, None, s3_client=s3_client)
         assert response["statusCode"] == 200
-        obfus_file_key = response["body"].replace(f"s3://{bucket_name}/", "")
-        obj = s3_client.get_object(Bucket=bucket_name, Key=obfus_file_key)
-        parq_data = obj["Body"].read()
-        parq_io = BytesIO(parq_data)
-        df_obfuscated = pd.read_parquet(parq_io)
+        
+        parq_bytestream = response["body"]
+        df_obfuscated = pd.read_parquet(BytesIO(parq_bytestream))
+
+        # obfus_file_key = response["body"].replace(f"s3://{bucket_name}/", "")
+        # obj = s3_client.get_object(Bucket=bucket_name, Key=obfus_file_key)
+        # parq_data = obj["Body"].read()
+        # parq_io = BytesIO(parq_data)
+        # df_obfuscated = pd.read_parquet(parq_io)
         assert all(df_obfuscated["name"] == "***")
         assert all(df_obfuscated["email_address"] == "***")
         assert all(df_obfuscated["age"] == [22, 21])
         assert all(df_obfuscated["cohort"] == [2023, 2024])
 
 
+# Class for testing lambda handler with json files
 class TestJson:
+    # Test lambda handler with a json file
     def test_lambda_handler_json(self, s3_client):
         bucket_name = "test-bucket"
         file_key = "test.json"
@@ -172,12 +189,14 @@ class TestJson:
         }
         response = lambda_handler(input_event, None, s3_client=s3_client)
         assert response["statusCode"] == 200
-        obfus_file_key = response["body"].replace(f"s3://{bucket_name}/", "")
-        obj = s3_client.get_object(Bucket=bucket_name, Key=obfus_file_key)
-        json_data = obj["Body"].read().decode("utf-8")
-        print(json_data)
-        df_obfuscated = pd.read_json(StringIO(json_data), lines=True)
-        print(df_obfuscated)
+        json_bytestream = response["body"]
+        df_obfuscated = pd.read_json(BytesIO(json_bytestream))
+        # obfus_file_key = response["body"].replace(f"s3://{bucket_name}/", "")
+        # obj = s3_client.get_object(Bucket=bucket_name, Key=obfus_file_key)
+        # json_data = obj["Body"].read().decode("utf-8")
+        # print(json_data)
+        # df_obfuscated = pd.read_json(StringIO(json_data), lines=True)
+        # print(df_obfuscated)
         assert all(df_obfuscated["name"] == "***")
         assert all(df_obfuscated["name"] == "***")
         assert all(df_obfuscated["email_address"] == "***")

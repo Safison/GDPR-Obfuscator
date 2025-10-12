@@ -9,6 +9,9 @@ from utils import (
     read_parquet_from_s3,
     write_json_obfuscated_file_to_s3,
     read_json_from_s3,
+    csv_bytestream_for_boto3_put,
+    parquet_bytestream_for_boto3_put,
+    json_bytestream_for_boto3_put,
 )
 
 s3_client = boto3.client("s3")
@@ -78,6 +81,8 @@ def lambda_handler(event, context, s3_client=None):
                 }
 
             df_obfuscate = obfuscate_pii(df_csv, pii_fields)
+            csv_bytes = csv_bytestream_for_boto3_put(df_obfuscate)
+            print(csv_bytes)
             obfus_file_key = write_csv_obfuscated_file_to_s3(
                     bucket_name,
                     file_key,
@@ -86,11 +91,12 @@ def lambda_handler(event, context, s3_client=None):
             if obfus_file_key.startswith("Error"):
                 return {
                     "statusCode": 400,
-                    "body": f"Error writing obfuscated file to S3",
+                    "body": "Error writing obfuscated file to S3",
                 }
             return {
                 "statusCode": 200,
-                "body": f"s3://{bucket_name}/{obfus_file_key}",
+                # "body": f"s3://{bucket_name}/{obfus_file_key}",
+                "body": csv_bytes
             }
         # Parquet file obfuscation
         elif file_key.endswith(".parquet"):
@@ -104,6 +110,8 @@ def lambda_handler(event, context, s3_client=None):
                 }
 
             df_obfuscate = obfuscate_pii(df_parquet, pii_fields)
+            parq_bytes = parquet_bytestream_for_boto3_put(df_obfuscate)
+
             obfus_file_key = write_parquet_obfuscated_file_to_s3(
                     bucket_name,
                     file_key,
@@ -112,12 +120,13 @@ def lambda_handler(event, context, s3_client=None):
             if obfus_file_key.startswith("Error"):
                 return {
                     "statusCode": 400,
-                    "body": f"Error writing obfuscated file to S3",
+                    "body": "Error writing obfuscated file to S3",
                 }
 
             return {
                 "statusCode": 200,
-                "body": f"s3://{bucket_name}/{obfus_file_key}",
+                # "body": f"s3://{bucket_name}/{obfus_file_key}",
+                "body": parq_bytes
             }
         # JSON file obfuscation
         elif file_key.endswith(".json"):
@@ -132,7 +141,7 @@ def lambda_handler(event, context, s3_client=None):
                 }
 
             obfuscated_df = obfuscate_pii(df_json, pii_fields)
-
+            json_bytes = json_bytestream_for_boto3_put(obfuscated_df)
             obfus_file_key = write_json_obfuscated_file_to_s3(
                     bucket_name,
                     file_key,
@@ -141,12 +150,12 @@ def lambda_handler(event, context, s3_client=None):
             if obfus_file_key.startswith("Error"):
                 return {
                     "statusCode": 400,
-                    "body": f"Error writing obfuscated file to S3",
+                    "body": "Error writing obfuscated file to S3",
                 }
 
             return {
                 "statusCode": 200,
-                "body": f"s3://{bucket_name}/{obfus_file_key}",
+                "body": json_bytes,
                     }
     except Exception as e:
         print(f"Internal server error: {e}")
@@ -159,7 +168,7 @@ def lambda_handler(event, context, s3_client=None):
 # Local Testing Only
 if __name__ == "__main__":
     response = lambda_handler({
-         "file_to_obfuscate": "s3://ans-gdpr-bucket/students.xx",
+         "file_to_obfuscate": "s3://ans-gdpr-bucket/students.json",
          "pii_fields": ["name", "email_address"]
      }, None)
     print(response)
