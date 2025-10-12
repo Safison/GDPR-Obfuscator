@@ -1,5 +1,6 @@
 import boto3
 import pandas as pd
+import base64
 from utils import (
     parse_input_json,
     read_csv_from_s3,
@@ -126,7 +127,7 @@ def lambda_handler(event, context, s3_client=None):
             return {
                 "statusCode": 200,
                 # "body": f"s3://{bucket_name}/{obfus_file_key}",
-                "body": parq_bytes
+                "body": base64.b64encode(parq_bytes).decode("utf-8")
             }
         # JSON file obfuscation
         elif file_key.endswith(".json"):
@@ -168,7 +169,7 @@ def lambda_handler(event, context, s3_client=None):
 # Local Testing Only
 if __name__ == "__main__":
     response = lambda_handler({
-         "file_to_obfuscate": "s3://ans-gdpr-bucket/students.json",
+         "file_to_obfuscate": "s3://ans-gdpr-bucket/students.parquet",
          "pii_fields": ["name", "email_address"]
      }, None)
     print(response)
