@@ -6,6 +6,7 @@ import pytest
 from moto import mock_aws
 import sys
 from io import StringIO, BytesIO
+import base64
 
 sys.path.append("src")
 from obfuscation_lambda import lambda_handler
@@ -154,8 +155,8 @@ class TestParquet:
         response = lambda_handler(input_event, None, s3_client=s3_client)
         assert response["statusCode"] == 200
         
-        parq_bytestream = response["body"]
-        df_obfuscated = pd.read_parquet(BytesIO(parq_bytestream))
+        parq_bytestream =  BytesIO(base64.b64decode(response["body"]))
+        df_obfuscated = pd.read_parquet(parq_bytestream)
 
         # obfus_file_key = response["body"].replace(f"s3://{bucket_name}/", "")
         # obj = s3_client.get_object(Bucket=bucket_name, Key=obfus_file_key)
