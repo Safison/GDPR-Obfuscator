@@ -19,7 +19,23 @@ s3_client = boto3.client("s3")
 
 
 def lambda_handler(event, context, s3_client=None):
-    """This function is triggered by an event bridge, step machine, etc.
+    """Obfuscation lambda to obfuscate sensitive data in a file
+
+    Input Arguments:
+    - event: trigger provided by event bridge, step machine, etc. event
+    contains json string contains s3 uri for the file to obfuscate
+    and pii fields to be obfuscated.
+    - context: supplied by AWS
+    - s3_client: boto3 s3 client.
+
+    Returned Output:
+    - output dictionary contains 3 keys:
+        - status_code key: a key shows the status code for the request. Codes
+        are either 200 or 400.
+        - file_key key: s3 uri for the obfuscated file.
+        - body key: bytestream representation for the file.
+
+    This function is triggered by an event bridge, step machine, etc.
     the function obfuscates sensitive data in files stored in S3 bucket.
     file to obfuscate is passed as s3 uri,
     along with the fields to be obfuscated
@@ -31,13 +47,14 @@ def lambda_handler(event, context, s3_client=None):
 
     It reads the file from s3 bucket, check its type by checking its extension,
     obfuscates sensitive data in the specified fields in the file,
-    saves the obfuscated file back to S3 bucket, and returns 
-    a bytestream of the file and the S3 URI of the obfuscated file. 
-    Supported file types are CSV, Parquet, and JSON."""
-    """For GDPR compliance:
+    saves the obfuscated file back to S3 bucket, and returns
+    a bytestream of the file and the S3 URI of the obfuscated file.
+    Supported file types are CSV, Parquet, and JSON.
+    For GDPR compliance:
     - The obfuscation tool performs irreversible anonymization.
     - No lookup tables or re-identification keys are retained.
     - Logs and debug output never capture original data."""
+
     try:
         s3_client = s3_client or boto3.client("s3")
         bucket_name, file_key, pii_fields = parse_input_json(event)
@@ -155,7 +172,7 @@ def lambda_handler(event, context, s3_client=None):
 
             return {
                 "statusCode": 200,
-                "file_key": f"s3://{bucket_name}/{obfus_file_key}", 
+                "file_key": f"s3://{bucket_name}/{obfus_file_key}",
                 "body": json_bytes,
                     }
     except Exception as e:
