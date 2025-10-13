@@ -20,8 +20,8 @@ def s3_client():
 
 
 class TestCSV:
-    # Test lambda handler with csv file
-    def test_lambda_handler_csv(self, s3_client):
+    # Test lambda handler returns bytestream for obfuscated csv file
+    def test_lambda_handler_csv_returns_bytestream(self, s3_client):
         bucket_name = "test-bucket"
         file_key = "test.csv"
         s3_client.create_bucket(Bucket=bucket_name)
@@ -36,21 +36,42 @@ class TestCSV:
             "pii_fields": ["name", "email_address"]
         }
         response = lambda_handler(input_event, None, s3_client=s3_client)
-        #print(response)
         assert response["statusCode"] == 200
         csv_bytestream = response["body"]
-        #print(f"bytestream: {csv_bytes}")
-        # obfus_file_key = response["body"].replace(f"s3://{bucket_name}/", "")
-        # obj = s3_client.get_object(Bucket=bucket_name, Key=obfus_file_key)
-        # csv_data = obj["Body"].read().decode("utf-8")
-        # csv_io = StringIO(csv_data)
         df_obfuscated = pd.read_csv(BytesIO(csv_bytestream))
-        #print(df_obfuscated)
+        assert isinstance(csv_bytestream, bytes)
         assert all(df_obfuscated["name"] == "***")
         assert all(df_obfuscated["email_address"] == "***")
         assert all(df_obfuscated["age"] == [22, 21])
         assert all(df_obfuscated["cohort"] == [2023, 2024])
 
+    # Test lambda handler returns s3 uri for obfuscated csv file
+    def test_lambda_handler_csv_returns_s3_uri(self, s3_client):
+        bucket_name = "test-bucket"
+        file_key = "test.csv"
+        s3_client.create_bucket(Bucket=bucket_name)
+
+        csv_data = ("name,email_address,age,cohort\n"
+                    "Anas,anas@example.com,22,2023\n"
+                    "Bob,bob@example.com,21,2024\n")
+        s3_client.put_object(Bucket=bucket_name, Key=file_key, Body=csv_data)
+
+        input_event = {
+            "file_to_obfuscate": f"s3://{bucket_name}/{file_key}",
+            "pii_fields": ["name", "email_address"]
+        }
+        response = lambda_handler(input_event, None, s3_client=s3_client)
+        assert response["statusCode"] == 200
+        obfus_file_key = response["file_key"].replace(f"s3://{bucket_name}/", "")
+        obj = s3_client.get_object(Bucket=bucket_name, Key=obfus_file_key)
+        csv_data = obj["Body"].read().decode("utf-8")
+        csv_io = StringIO(csv_data)
+        df_obfuscated = pd.read_csv(csv_io)
+        assert  obfus_file_key.endswith("_obfuscated.csv")
+        assert all(df_obfuscated["name"] == "***")
+        assert all(df_obfuscated["email_address"] == "***")
+        assert all(df_obfuscated["age"] == [22, 21])
+        assert all(df_obfuscated["cohort"] == [2023, 2024])
 
 class TestFaultScenarios:
     # Test lambda handler when no file exists
@@ -128,8 +149,8 @@ class TestFaultScenarios:
 
 # Class for testing lambda handler with parquet file
 class TestParquet:
-    # Test lambda handler with parquet file
-    def test_lambda_handler_parquet(self, s3_client):
+    # Test lambda handler returns bytestream for obfuscated parquet file
+    def test_lambda_handler_parquet_returns_bytestream(self, s3_client):
         bucket_name = "test-bucket"
         file_key = "test.parquet"
         s3_client.create_bucket(Bucket=bucket_name)
@@ -156,13 +177,47 @@ class TestParquet:
         assert response["statusCode"] == 200
         
         parq_bytestream =  BytesIO(base64.b64decode(response["body"]))
+        parq_data_bytes = parq_bytestream.getvalue()
         df_obfuscated = pd.read_parquet(parq_bytestream)
 
-        # obfus_file_key = response["body"].replace(f"s3://{bucket_name}/", "")
-        # obj = s3_client.get_object(Bucket=bucket_name, Key=obfus_file_key)
-        # parq_data = obj["Body"].read()
-        # parq_io = BytesIO(parq_data)
-        # df_obfuscated = pd.read_parquet(parq_io)
+        assert isinstance(parq_data_bytes, bytes)
+        assert all(df_obfuscated["name"] == "***")
+        assert all(df_obfuscated["email_address"] == "***")
+        assert all(df_obfuscated["age"] == [22, 21])
+        assert all(df_obfuscated["cohort"] == [2023, 2024])
+
+    # Test lambda handler returns s3 uri for obfuscated parquet file
+    def test_lambda_handler_parquet_returns_s3_uri(self, s3_client):
+        bucket_name = "test-bucket"
+        file_key = "test.parquet"
+        s3_client.create_bucket(Bucket=bucket_name)
+
+        data = {
+                "name": ["Anas", "Bob"],
+                "email_address": ["anas@example.com", "bob@example.com"],
+                "age": [22, 21],
+                "cohort": [2023, 2024],
+            }
+        parq_df = pd.DataFrame(data)
+        parq_buffer = BytesIO()
+        parq_df.to_parquet(parq_buffer, index=False)
+        parq_buffer.seek(0)
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key=file_key,
+            Body=parq_buffer.getvalue())
+        input_event = {
+            "file_to_obfuscate": f"s3://{bucket_name}/{file_key}",
+            "pii_fields": ["name", "email_address"]
+        }
+        response = lambda_handler(input_event, None, s3_client=s3_client)
+        assert response["statusCode"] == 200
+        obfus_file_key = response["file_key"].replace(f"s3://{bucket_name}/", "")
+        obj = s3_client.get_object(Bucket=bucket_name, Key=obfus_file_key)
+        parq_data = obj["Body"].read()
+        parq_io = BytesIO(parq_data)
+        df_obfuscated = pd.read_parquet(parq_io)
+        assert obfus_file_key.endswith("_obfuscated.parquet")
         assert all(df_obfuscated["name"] == "***")
         assert all(df_obfuscated["email_address"] == "***")
         assert all(df_obfuscated["age"] == [22, 21])
@@ -171,8 +226,8 @@ class TestParquet:
 
 # Class for testing lambda handler with json files
 class TestJson:
-    # Test lambda handler with a json file
-    def test_lambda_handler_json(self, s3_client):
+    # Test lambda handler returns bytestream for obfuscated json file
+    def test_lambda_handler_json_returns_bytestream(self, s3_client):
         bucket_name = "test-bucket"
         file_key = "test.json"
         s3_client.create_bucket(Bucket=bucket_name)
@@ -192,12 +247,40 @@ class TestJson:
         assert response["statusCode"] == 200
         json_bytestream = response["body"]
         df_obfuscated = pd.read_json(BytesIO(json_bytestream))
-        # obfus_file_key = response["body"].replace(f"s3://{bucket_name}/", "")
-        # obj = s3_client.get_object(Bucket=bucket_name, Key=obfus_file_key)
-        # json_data = obj["Body"].read().decode("utf-8")
-        # print(json_data)
-        # df_obfuscated = pd.read_json(StringIO(json_data), lines=True)
-        # print(df_obfuscated)
+        assert isinstance(json_bytestream, bytes)
+        assert all(df_obfuscated["name"] == "***")
+        assert all(df_obfuscated["name"] == "***")
+        assert all(df_obfuscated["email_address"] == "***")
+        assert all(df_obfuscated["age"] == [22, 21])
+        assert all(df_obfuscated["cohort"] == [2023, 2024])
+
+    # Test lambda handler returns s3 uri for obfuscated json file
+    def test_lambda_handler_json_returns_s3_uri(self, s3_client):
+        bucket_name = "test-bucket"
+        file_key = "test.json"
+        s3_client.create_bucket(Bucket=bucket_name)
+        data = {
+            "name": ["Anas", "Bob"],
+            "email_address": ["anas@example.com", "bob@example.com"],
+            "age": [22, 21],
+            "cohort": [2023, 2024],
+                }
+        json_file = json.dumps(data)
+        s3_client.put_object(Bucket=bucket_name, Key=file_key, Body=json_file)
+        input_event = {
+            "file_to_obfuscate": f"s3://{bucket_name}/{file_key}",
+            "pii_fields": ["name", "email_address"]
+        }
+        response = lambda_handler(input_event, None, s3_client=s3_client)
+        assert response["statusCode"] == 200
+        obfus_file_key = response["file_key"].replace(f"s3://{bucket_name}/", "")
+        obj = s3_client.get_object(Bucket=bucket_name, Key=obfus_file_key)
+        json_data = obj["Body"].read().decode("utf-8")
+        print(json_data)
+        df_obfuscated = pd.read_json(StringIO(json_data), lines=True)
+        print(df_obfuscated)
+        
+        assert obfus_file_key.endswith("_obfuscated.json")
         assert all(df_obfuscated["name"] == "***")
         assert all(df_obfuscated["name"] == "***")
         assert all(df_obfuscated["email_address"] == "***")

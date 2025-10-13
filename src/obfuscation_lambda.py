@@ -31,9 +31,9 @@ def lambda_handler(event, context, s3_client=None):
 
     It reads the file from s3 bucket, check its type by checking its extension,
     obfuscates sensitive data in the specified fields in the file,
-    saves the obfuscated file back to S3 bucket, and returns the
-    S3 URI of the obfuscated file. Supported file types are
-    CSV, Parquet, and JSON."""
+    saves the obfuscated file back to S3 bucket, and returns 
+    a bytestream of the file and the S3 URI of the obfuscated file. 
+    Supported file types are CSV, Parquet, and JSON."""
     """For GDPR compliance:
     - The obfuscation tool performs irreversible anonymization.
     - No lookup tables or re-identification keys are retained.
@@ -83,7 +83,6 @@ def lambda_handler(event, context, s3_client=None):
 
             df_obfuscate = obfuscate_pii(df_csv, pii_fields)
             csv_bytes = csv_bytestream_for_boto3_put(df_obfuscate)
-            print(csv_bytes)
             obfus_file_key = write_csv_obfuscated_file_to_s3(
                     bucket_name,
                     file_key,
@@ -168,10 +167,10 @@ def lambda_handler(event, context, s3_client=None):
 
 ###################################
 # Local Testing Only
-if __name__ == "__main__":
-    response = lambda_handler({
-         "file_to_obfuscate": "s3://ans-gdpr-bucket/students.json",
-         "pii_fields": ["name", "email_address"]
-     }, None)
-    print(response)
+# if __name__ == "__main__":
+#     response = lambda_handler({
+#          "file_to_obfuscate": "s3://ans-gdpr-bucket/students.json",
+#          "pii_fields": ["name", "email_address"]
+#      }, None)
+#     print(response)
 ###################################

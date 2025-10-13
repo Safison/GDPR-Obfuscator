@@ -137,7 +137,6 @@ def read_parquet_from_s3(bucket_name, file_key, s3):
         """ Reads a Parquet file from an S3 bucket and returns
             its content as a pandas DataFrame"""
         try:
-            
             obj = s3.get_object(Bucket=bucket_name, Key=file_key)
             parquet_data = obj['Body'].read()
             df_parquet = pd.read_parquet(io.BytesIO(parquet_data))
@@ -181,8 +180,6 @@ def parquet_bytestream_for_boto3_put(df_obf_parq):
 ######################
 # json file processing
 ######################
-
-
 def read_json_from_s3(bucket_name, file_key, s3):
     """Reads a JSON file from an S3 bucket and returns
     its content as a pandas DataFrame"""
@@ -221,17 +218,3 @@ def json_bytestream_for_boto3_put(df_obf_jsn):
     json_str = df_obf_jsn.to_json(orient="records", lines=False)
     json_bytes = json_str.encode("utf-8")
     return json_bytes
-
-
-######################
-# Function developed For testign purposes only
-def convert_csv_to_parquet():
-    """For testing puposes, the function
-    converts a CSV file to a Parquet file"""
-    try:
-        df = pd.read_csv("students.csv")
-        df.to_parquet("students.parquet", index=False)
-        print(f"CSV file converted to Parquet and saved")
-    except Exception as e:
-        print(f"Error converting CSV to Parquet: {e}")
-        raise e

@@ -81,7 +81,7 @@ class TestParseInputJson:
 class TestCSVOperations:
     @mock_aws
     def test_read_csv_from_s3(self, s3_client):
-        # Create a mock S3 bucket and upload a test CSV file
+        # Creates a mock S3 bucket and upload a test CSV file
         bucket_name = "test-bucket"
         file_key = "test.csv"
         csv_content = ("name,email_address\n"
@@ -107,7 +107,7 @@ class TestCSVOperations:
 
     @mock_aws
     def test_write_csv_obfuscated_file_to_s3(self, s3_client):
-        # Create a mock S3 bucket
+        # Creates a mock S3 bucket
         bucket = "test-bucket"
         file_key = "test.csv"
         s3_client.create_bucket(Bucket=bucket)
