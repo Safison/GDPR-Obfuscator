@@ -96,7 +96,7 @@ def lambda_handler(event, context, s3_client=None):
                 }
             return {
                 "statusCode": 200,
-                # "body": f"s3://{bucket_name}/{obfus_file_key}",
+                "file_key": f"s3://{bucket_name}/{obfus_file_key}",
                 "body": csv_bytes
             }
         # Parquet file obfuscation
@@ -126,7 +126,7 @@ def lambda_handler(event, context, s3_client=None):
 
             return {
                 "statusCode": 200,
-                # "body": f"s3://{bucket_name}/{obfus_file_key}",
+                "file_key": f"s3://{bucket_name}/{obfus_file_key}",
                 "body": base64.b64encode(parq_bytes).decode("utf-8")
             }
         # JSON file obfuscation
@@ -156,6 +156,7 @@ def lambda_handler(event, context, s3_client=None):
 
             return {
                 "statusCode": 200,
+                "file_key": f"s3://{bucket_name}/{obfus_file_key}", 
                 "body": json_bytes,
                     }
     except Exception as e:
@@ -169,7 +170,7 @@ def lambda_handler(event, context, s3_client=None):
 # Local Testing Only
 if __name__ == "__main__":
     response = lambda_handler({
-         "file_to_obfuscate": "s3://ans-gdpr-bucket/students.parquet",
+         "file_to_obfuscate": "s3://ans-gdpr-bucket/students.json",
          "pii_fields": ["name", "email_address"]
      }, None)
     print(response)

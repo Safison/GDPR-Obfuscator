@@ -116,9 +116,15 @@ def write_csv_obfuscated_file_to_s3(bucket_name, file_key, df, s3):
 
 
 def csv_bytestream_for_boto3_put(df_obf_csv):
-    csv_str = df_obf_csv.to_csv(index=False)
-    csv_bytes = csv_str.encode("utf-8")
-    return csv_bytes
+    try:
+        if not isinstance(df_obf_csv, pd.DataFrame) or df_obf_csv.empty:
+            return "Invalid dataframe provided"
+        else:
+            csv_str = df_obf_csv.to_csv(index=False)
+            csv_bytes = csv_str.encode("utf-8")
+            return csv_bytes
+    except Exception as e:
+        return f"Errro reading dataframe,{e}"
 
 
 #######################
