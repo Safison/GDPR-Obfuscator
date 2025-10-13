@@ -9,6 +9,9 @@ from src.utils import (
     write_parquet_obfuscated_file_to_s3,
     read_json_from_s3,
     write_json_obfuscated_file_to_s3,
+    csv_bytestream_for_boto3_put,
+    parquet_bytestream_for_boto3_put,
+    json_bytestream_for_boto3_put,
 )
 import moto
 import boto3
@@ -17,6 +20,7 @@ import io
 from io import StringIO
 import csv
 import json
+from io import BytesIO
 
 s3_client = boto3.client("s3", region_name="us-east-1")
 
@@ -202,13 +206,31 @@ class TestCSVOperations:
             "cohort": [2023, 2024],
         }
         df = pd.DataFrame(data)
-        assert write_csv_obfuscated_file_to_s3(bucket_name,
-                                               file_key,
-                                               df,
-                                               s3_client
-                                               ) == ("No bucket name provided")
+        assert write_csv_obfuscated_file_to_s3(
+            bucket_name,
+            file_key,
+            df,
+            s3_client
+            ) == ("No bucket name provided")
 
-
+    def test_csv_bytestream_boto3_put(self):
+        data = {
+                "name": ["Anas", "Bob"],
+                "email_address": ["anas@example.com", "bob@example.com"],
+                "age": [22, 21],
+                "cohort": [2023, 2024],
+            }
+        df = pd.DataFrame(data)
+        response = csv_bytestream_for_boto3_put(df)
+        print(response)
+        print(type(response))
+        assert isinstance(response, bytes)
+        df_csv = pd.read_csv(BytesIO(response))
+        assert all(df_csv["name"] == ["Anas", "Bob"]) 
+        assert all(df_csv["email_address"] == ["anas@example.com", "bob@example.com"])
+        assert all(df_csv["age"] == [22, 21])
+        assert all(df_csv["cohort"] == [2023, 2024])
+    
 class TestObfuscatePII:
     def test_obfuscate_pii(self):
         data = {
@@ -293,6 +315,23 @@ class TestParquetOperations:
         assert df["name"].tolist() == ["***", "***"]
         assert df["email_address"].tolist() == ["***", "***"]
 
+    def test_csv_bytestream_boto3_put(self):
+        data = {
+                "name": ["Anas", "Bob"],
+                "email_address": ["anas@example.com", "bob@example.com"],
+                "age": [22, 21],
+                "cohort": [2023, 2024],
+            }
+        df = pd.DataFrame(data)
+        response = parquet_bytestream_for_boto3_put(df)
+        print(response)
+        print(type(response))
+        assert isinstance(response, bytes)
+        df_parq = pd.read_parquet(BytesIO(response))
+        assert all(df_parq["name"] == ["Anas", "Bob"]) 
+        assert all(df_parq["email_address"] == ["anas@example.com", "bob@example.com"])
+        assert all(df_parq["age"] == [22, 21])
+        assert all(df_parq["cohort"] == [2023, 2024])
 
 class TestJSONOperations:
     @mock_aws
@@ -350,3 +389,21 @@ class TestJSONOperations:
             '{"name":"***","email_address":"***","age":21,"cohort":2024}\n'
         )
         assert content == expected_content
+
+    def test_csv_bytestream_boto3_put(self):
+        data = {
+                "name": ["Anas", "Bob"],
+                "email_address": ["anas@example.com", "bob@example.com"],
+                "age": [22, 21],
+                "cohort": [2023, 2024],
+            }
+        df = pd.DataFrame(data)
+        response = json_bytestream_for_boto3_put(df)
+        print(response)
+        print(type(response))
+        assert isinstance(response, bytes)
+        df_parq = pd.read_json(BytesIO(response))
+        assert all(df_parq["name"] == ["Anas", "Bob"]) 
+        assert all(df_parq["email_address"] == ["anas@example.com", "bob@example.com"])
+        assert all(df_parq["age"] == [22, 21])
+        assert all(df_parq["cohort"] == [2023, 2024])    

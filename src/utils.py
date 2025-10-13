@@ -131,6 +131,7 @@ def read_parquet_from_s3(bucket_name, file_key, s3):
         """ Reads a Parquet file from an S3 bucket and returns
             its content as a pandas DataFrame"""
         try:
+            
             obj = s3.get_object(Bucket=bucket_name, Key=file_key)
             parquet_data = obj['Body'].read()
             df_parquet = pd.read_parquet(io.BytesIO(parquet_data))
