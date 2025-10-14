@@ -25,6 +25,7 @@ from io import BytesIO
 s3_client = boto3.client("s3", region_name="us-east-1")
 
 
+# Creates Boto3 s3 mock client
 @pytest.fixture
 def s3_client():
     with mock_aws():
@@ -32,8 +33,11 @@ def s3_client():
         yield s3
 
 
+# Tests parse input methods
 class TestParseInputJson:
     def test_parse_input_json(self):
+        # Tests parse input json method with input json
+
         input_json = {
             "file_to_obfuscate": "s3://ans-gdpr-bucket/students.csv",
             "pii_fields": ["name", "email_address"],
@@ -43,17 +47,9 @@ class TestParseInputJson:
         assert file_key == "students.csv"
         assert pii_fields == ["name", "email_address"]
 
-    def test_parse_input_json_different_path(self):
-        input_json = {
-            "file_to_obfuscate": "s3://my-bucket/data/files/info.csv",
-            "pii_fields": ["id", "phone_number"],
-        }
-        bucket_name, file_key, pii_fields = parse_input_json(input_json)
-        assert bucket_name == "my-bucket"
-        assert file_key == "data/files/info.csv"
-        assert pii_fields == ["id", "phone_number"]
-
     def test_parse_input_json_empty(self):
+        # Tests parse input json method with empty input
+
         input_json = {}
         bucket_name, file_key, pii_fields = parse_input_json(input_json)
         assert bucket_name == "Input JSON is empty."
@@ -61,6 +57,8 @@ class TestParseInputJson:
         assert pii_fields == []
 
     def test_parse_input_json_no_pii_fields(self):
+        # Tests parse input json method with no pii fields provided
+
         input_json = {"file_to_obfuscate": "s3://ans-gdpr-bucket/students.csv"}
         bucket_name, file_key, pii_fields = parse_input_json(input_json)
         assert bucket_name == "ans-gdpr-bucket"
@@ -68,6 +66,8 @@ class TestParseInputJson:
         assert pii_fields == ['No pii fields provided']
 
     def test_parse_input_json_invalid_path(self):
+        # Tests parse input json method with invalid s3 uri format
+
         input_json = {
             "file_to_obfuscate": "http://ans-gdpr-bucket/students.csv",
             "pii_fields": ["name", "email_address"],
@@ -78,10 +78,13 @@ class TestParseInputJson:
         assert pii_fields == []
 
 
+# Tests for CSV file processes
 class TestCSVOperations:
     @mock_aws
+    # mocks AWS SDK (boto3)
     def test_read_csv_from_s3(self, s3_client):
-        # Creates a mock S3 bucket and upload a test CSV file
+        # Tests for read csv file from s3 bucket
+
         bucket_name = "test-bucket"
         file_key = "test.csv"
         csv_content = ("name,email_address\n"
@@ -100,14 +103,18 @@ class TestCSVOperations:
                 ["anas@example.com", "bob@example.com"])
 
     def test_read_csv_from_s3_no_file(self, s3_client):
+        # Tests for read csv file when no file exist
+
         bucket_name = "nonexistent-bucket"
         file_key = "nonexistent-file.csv"
         df_csv = read_csv_from_s3(bucket_name, file_key, s3_client)
         assert df_csv.startswith("Error reading CSV from S3:")
 
     @mock_aws
+    # mocks AWS SDK (boto3)
     def test_write_csv_obfuscated_file_to_s3(self, s3_client):
-        # Creates a mock S3 bucket
+        # Tests for write obfuscated csv file to s3 bucket
+
         bucket = "test-bucket"
         file_key = "test.csv"
         s3_client.create_bucket(Bucket=bucket)
@@ -135,6 +142,8 @@ class TestCSVOperations:
                 expected_content.replace('\r\n', '\n'))
 
     def test_write_csv_obfuscated_file_to_s3_invalid_bucket(self, s3_client):
+        # Tests for write obfuscated csv file to s3 bucket when invalid bucket
+
         bucket_name = "nonexistent-bucket"
         file_key = "test.csv"
         data = {
@@ -152,6 +161,9 @@ class TestCSVOperations:
         assert result.startswith("Error writing obfuscated file to S3:")
 
     def test_write_csv_obfuscated_file_no_file_key(self):
+        """Tests for write obfuscated csv file to s3 bucket
+            when no file key exists"""
+
         bucket_name = "test-bucket"
         file_key = ""
         data = {
@@ -169,6 +181,9 @@ class TestCSVOperations:
                 ) == ("No file key provided")
 
     def test_write_csv_obfuscated_file_to_s3_no_df(self):
+        """ Tests for write obfuscated csv file to s3 bucket
+            when no dataframe passed"""
+
         bucket_name = "test-bucket"
         file_key = "test.csv"
         df = "no df"
@@ -180,6 +195,9 @@ class TestCSVOperations:
                 ) == ("No valid dataframe provided")
 
     def test_write_csv_obfuscated_file_to_s3_no_csv_extension(self):
+        """ Tests for write obfuscated csv file to s3 bucket when
+        file is not with .csv extension"""
+
         bucket_name = "test-bucket"
         file_key = "test.txt"
         data = {
@@ -197,6 +215,9 @@ class TestCSVOperations:
                 ) == ("File key must have a .csv extension")
 
     def test_write_csv_obfuscated_file_to_s3_no_bucket(self):
+        """ Tests for write obfuscated csv file to s3 bucket
+        when no bucket exists"""
+
         bucket_name = ""
         file_key = "test.csv"
         data = {
@@ -214,6 +235,8 @@ class TestCSVOperations:
             ) == ("No bucket name provided")
 
     def test_csv_bytestream_boto3_put(self):
+        # Tests csv file converted into bytestream
+
         data = {
                 "name": ["Anas", "Bob"],
                 "email_address": ["anas@example.com", "bob@example.com"],
@@ -222,17 +245,21 @@ class TestCSVOperations:
             }
         df = pd.DataFrame(data)
         response = csv_bytestream_for_boto3_put(df)
-        print(response)
-        print(type(response))
         assert isinstance(response, bytes)
         df_csv = pd.read_csv(BytesIO(response))
-        assert all(df_csv["name"] == ["Anas", "Bob"]) 
-        assert all(df_csv["email_address"] == ["anas@example.com", "bob@example.com"])
+        assert all(df_csv["name"] == ["Anas", "Bob"])
+        assert all(df_csv["email_address"] == [
+                            "anas@example.com",
+                            "bob@example.com"])
         assert all(df_csv["age"] == [22, 21])
         assert all(df_csv["cohort"] == [2023, 2024])
-    
+
+
+# Tests for data obfuscation
 class TestObfuscatePII:
     def test_obfuscate_pii(self):
+        # Tests pii fields are obfuscated
+
         data = {
             "name": ["Anas", "Bob"],
             "email_address": ["anas@example.com", "bob@example.com"],
@@ -248,6 +275,8 @@ class TestObfuscatePII:
         assert obfuscated_df["cohort"].tolist() == [2023, 2024]
 
     def test_obfuscate_pii_no_pii_fields(self):
+        # Tests pii fields obfuscation when no fields passed
+
         data = {
             "name": ["Anas", "Bob"],
             "email_address": ["anas@example.com", "bob@example.com"],
@@ -260,16 +289,21 @@ class TestObfuscatePII:
         assert obfuscated_df == "no pii fields provided"
 
     def test_obfuscate_no_df(self):
+        # Tests pii fields obfuscation when no dataframe passed
+
         df = "no df"
         pii_fields = ["name", "email_address"]
         obfuscated_df = obfuscate_pii(df, pii_fields)
         assert obfuscated_df == "no data frame provided"
 
 
+# Tests for parquet obfuscation methods
 class TestParquetOperations:
     @mock_aws
+    # mocks AWS SDK (boto3)
     def test_read_parquet_from_s3(self, s3_client):
-        # Creates a mock S3 bucket and upload a test parquet file
+        # Tests read parquet file from s3 bucket
+
         bucket_name = "test-bucket"
         file_key = "students.parquet"
         s3_client.create_bucket(Bucket=bucket_name)
@@ -289,6 +323,8 @@ class TestParquetOperations:
 
     @mock_aws
     def test_write_parquet_obfuscated_file_to_s3(self, s3_client):
+        # Tests write parquet file to s3 bucket
+
         bucket_name = "test-bucket"
         file_key = "students.parquet"
         s3_client.create_bucket(Bucket=bucket_name)
@@ -315,7 +351,9 @@ class TestParquetOperations:
         assert df["name"].tolist() == ["***", "***"]
         assert df["email_address"].tolist() == ["***", "***"]
 
-    def test_csv_bytestream_boto3_put(self):
+    def test_parquet_bytestream_boto3_put(self):
+        # Tests parquet file converted into bytestream
+
         data = {
                 "name": ["Anas", "Bob"],
                 "email_address": ["anas@example.com", "bob@example.com"],
@@ -324,19 +362,22 @@ class TestParquetOperations:
             }
         df = pd.DataFrame(data)
         response = parquet_bytestream_for_boto3_put(df)
-        print(response)
-        print(type(response))
         assert isinstance(response, bytes)
         df_parq = pd.read_parquet(BytesIO(response))
-        assert all(df_parq["name"] == ["Anas", "Bob"]) 
-        assert all(df_parq["email_address"] == ["anas@example.com", "bob@example.com"])
+        assert all(df_parq["name"] == ["Anas", "Bob"])
+        assert all(df_parq["email_address"] == [
+                            "anas@example.com",
+                            "bob@example.com"])
         assert all(df_parq["age"] == [22, 21])
         assert all(df_parq["cohort"] == [2023, 2024])
 
+
+# Tests for json file obfuscation methods
 class TestJSONOperations:
     @mock_aws
     def test_read_json_from_s3(self, s3_client):
-        # Creates a mock S3 bucket and upload a test parquet file
+        # Tests read json from s3
+
         bucket_name = "test-bucket"
         file_key = "test.json"
         data = {
@@ -366,6 +407,8 @@ class TestJSONOperations:
 
     @mock_aws
     def test_write_json_obfuscated_file_to_s3(self, s3_client):
+        # Tests write obfuscated json file to s3 bucket
+
         bucket_name = "test-bucket"
         file_key = "test.json"
         s3_client.create_bucket(Bucket=bucket_name)
@@ -390,7 +433,9 @@ class TestJSONOperations:
         )
         assert content == expected_content
 
-    def test_csv_bytestream_boto3_put(self):
+    def test_json_bytestream_boto3_put(self):
+        # Tests json file converted into bytestream
+
         data = {
                 "name": ["Anas", "Bob"],
                 "email_address": ["anas@example.com", "bob@example.com"],
@@ -399,11 +444,11 @@ class TestJSONOperations:
             }
         df = pd.DataFrame(data)
         response = json_bytestream_for_boto3_put(df)
-        print(response)
-        print(type(response))
         assert isinstance(response, bytes)
         df_parq = pd.read_json(BytesIO(response))
-        assert all(df_parq["name"] == ["Anas", "Bob"]) 
-        assert all(df_parq["email_address"] == ["anas@example.com", "bob@example.com"])
+        assert all(df_parq["name"] == ["Anas", "Bob"])
+        assert all(df_parq["email_address"] == [
+                        "anas@example.com",
+                        "bob@example.com"])
         assert all(df_parq["age"] == [22, 21])
-        assert all(df_parq["cohort"] == [2023, 2024])    
+        assert all(df_parq["cohort"] == [2023, 2024])

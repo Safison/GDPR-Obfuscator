@@ -176,7 +176,6 @@ def lambda_handler(event, context, s3_client=None):
                 "body": json_bytes,
                     }
     except Exception as e:
-        print(f"Internal server error: {e}")
         return {
             "statusCode": 500,
             "body": f"Internal server error: {e}",

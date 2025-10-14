@@ -82,7 +82,6 @@ def obfuscate_pii(df, pii_fields):
                         lambda x: "***" if pd.notnull(x) else x)
         return df
     except Exception as e:
-        print(f"Error obfuscating PII fields: {e}")
         return df
 
 
