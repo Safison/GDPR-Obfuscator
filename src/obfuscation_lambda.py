@@ -180,13 +180,3 @@ def lambda_handler(event, context, s3_client=None):
             "statusCode": 500,
             "body": f"Internal server error: {e}",
         }
-
-###################################
-# Local Testing Only
-# if __name__ == "__main__":
-#     response = lambda_handler({
-#          "file_to_obfuscate": "s3://ans-gdpr-bucket/students.json",
-#          "pii_fields": ["name", "email_address"]
-#      }, None)
-#     print(response)
-###################################

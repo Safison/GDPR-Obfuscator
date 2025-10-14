@@ -1,6 +1,6 @@
-# IAM role set up
+# AWS IAM role set up for lambda
 
-# Trust Policies for Lambda 
+# Creates Trust Policies for Lambda 
 data "aws_iam_policy_document" "trust_policy_lambda" {
   statement {
     effect = "Allow"
@@ -15,7 +15,7 @@ data "aws_iam_policy_document" "trust_policy_lambda" {
 }
 
 
-# Create Role
+# Creates IAM Role
 resource "aws_iam_role" "obfuscate_lambda_role" {
   name_prefix        = "role-${var.obfuscate_lambda}"
   assume_role_policy = data.aws_iam_policy_document.trust_policy_lambda.json
@@ -26,7 +26,7 @@ resource "aws_iam_role" "obfuscate_lambda_role" {
 }
 
 
-# policy document for s3 buckets
+# Creates IAM policy document for s3 buckets access permissions
 data "aws_iam_policy_document" "obfuscate_s3_policy" {
   statement {
     sid = "1"
@@ -43,7 +43,7 @@ data "aws_iam_policy_document" "obfuscate_s3_policy" {
 }
 
 
-# policy for s3 bucket
+# Creates IAM policy
 resource "aws_iam_policy" "s3_policy" {
   name_prefix = "s3-policy-${var.obfuscate_lambda}-write"
 
@@ -51,7 +51,7 @@ resource "aws_iam_policy" "s3_policy" {
 
 }
 
-# policy attachment to the role "obfuscate_lambda_role"
+# Creates policy attachment to the role "obfuscate_lambda_role"
 resource "aws_iam_policy_attachment" "lambda_s3_policy_attachment" {
   name       = "lambda-s3-policy-attachment"
   roles      = [aws_iam_role.obfuscate_lambda_role.name]

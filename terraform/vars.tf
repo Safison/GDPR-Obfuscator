@@ -1,4 +1,5 @@
-#Terraform variable for tagging AWS resources with an environment
+# Terraform variables for tagging AWS resources with an environment
+
 variable "environment" {
   description = "The enviroment tag for AWS resources"
   type        = string

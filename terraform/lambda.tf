@@ -1,4 +1,4 @@
-# Create ZIP with source + dependencies
+# Creates ZIP for lambda function source code and dependencies
 data "archive_file" "lambda_zip" {
   type        = "zip"
   source_dir  = "${path.module}/../src"
@@ -6,7 +6,7 @@ data "archive_file" "lambda_zip" {
 }
 
 
-# Lambda Function
+# Creates Lambda function resource
 resource "aws_lambda_function" "obfuscation_lambda" {
   function_name = "obfuscation_lambda"
   handler       = "obfuscation_lambda.lambda_handler"
@@ -27,7 +27,7 @@ resource "aws_lambda_function" "obfuscation_lambda" {
 }
 
 
-#s3 bucket for lambda code
+# Creates s3 bucket for lambda code
 resource "aws_s3_bucket" "code_bucket" {
   bucket_prefix = "gdpr-obfuscate-code-"
   tags      = {
@@ -37,12 +37,11 @@ resource "aws_s3_bucket" "code_bucket" {
 }
 
 
-# s3 object for lambda code
+# Uploads lambda code zip file to s3 code bucket
 resource "aws_s3_object" "lambda_code" {
   for_each = toset([var.obfuscate_lambda])
   bucket   = aws_s3_bucket.code_bucket.bucket
   key      = "${each.key}/function.zip"
   source   = "${path.module}/../packages/lambda_package.zip"
-  #etag     = filemd5("${path.module}/../packages/lambda_package.zip")
   etag     = filemd5("${path.module}/../packages/lambda_package.zip")
 }

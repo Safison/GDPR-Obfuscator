@@ -1,4 +1,4 @@
-# main terraform configurations
+# Main terraform configurations
 terraform {
   required_providers {
     aws = {
@@ -14,6 +14,7 @@ terraform {
   }
 }
 
+# Configures the AWS provider
 provider "aws" {
   region = "us-east-1"
   default_tags {
