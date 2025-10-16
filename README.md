@@ -25,7 +25,7 @@ advance.
 2. Lambda function reads the file and PII fields.
 3. Lambda function applies obfuscation to defined PII fields.
 4. Obfuscated version of the file saved back to the s3 bucket.
-5. File is converted to a bytestream representation of the file.
+5. Obfuscated file is converted to a bytestream representation of the file.
 6. Lambda function returns bytestream of the file and file key as a response.
 
 ### Project Structure:
